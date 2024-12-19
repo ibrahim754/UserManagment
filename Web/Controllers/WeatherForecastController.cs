@@ -6,30 +6,19 @@ namespace Web.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    [Authorize]
+ 
     public class WeatherForecastController : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
+       private readonly IMailService _mailService;
+        public WeatherForecastController(IMailService mailService)
         {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
-
-        private readonly ILogger<WeatherForecastController> _logger;
-
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
-        {
-            _logger = logger;
+            _mailService = mailService;
         }
-
-        [HttpGet(Name = "GetWeatherForecast")]
-        public async Task<IActionResult> GetAsync()
+        [HttpPost("send")]
+        public async Task<IActionResult> SendEmail([FromForm] MailRequest mailRequest)
         {
-            using (var httpClient = new HttpClient())
-            {
-                var publicIp = await httpClient.GetStringAsync("https://api.ipify.org");
-                return Ok(publicIp);  // This will return the global public IP
-            }
-
+            await _mailService.SendEmailAsync(mailRequest.ToEmail, mailRequest.Subject, mailRequest.Body, mailRequest.attachments);
+            return Ok( );
         }
     }
 }
