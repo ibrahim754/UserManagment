@@ -18,7 +18,7 @@ namespace Web.Controllers
         public async Task<IActionResult> SendEmail([FromForm] MailRequest mailRequest)
         {
             await _mailService.SendEmailAsync(mailRequest.ToEmail, mailRequest.Subject, mailRequest.Body, mailRequest.attachments);
-            return Ok( );
+            return Ok( "send suffully");
         }
     }
 }
