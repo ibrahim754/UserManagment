@@ -1,10 +1,13 @@
 ﻿
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using MimeKit;
+using UserManagement.Entites;
+using UserManagement.Interfaces;
 
-namespace Web
+namespace UserManagement.Services
 {
     public class MailService : IMailService
     {

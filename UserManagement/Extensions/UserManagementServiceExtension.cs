@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
 using UserManagement.DAL;
+using UserManagement.Entites;
 using UserManagement.Interfaces;
 using UserManagement.Models;
 using UserManagement.Services;
@@ -25,11 +26,7 @@ namespace UserManagement.Extensions
             services.ConfigureJwtAuthentication(configuration);
             services.AddCloudinary(configuration);
             services.AddUserManagementDependencies();
-            services.Configure<DataProtectionTokenProviderOptions>(options =>
-            {
-                options.TokenLifespan = TimeSpan.FromHours(24);
-            }
-            ) ;
+            services.AddEmailConfiguration(configuration);
 
             return services;
         }
@@ -128,6 +125,12 @@ namespace UserManagement.Extensions
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ITokenService, TokenService>();
  
+            return services;
+        }
+        private static IServiceCollection AddEmailConfiguration(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<MailSettings>(configuration.GetSection("MailSettings"));
+            services.AddTransient<IMailService, MailService>();
             return services;
         }
     }

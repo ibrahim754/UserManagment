@@ -23,8 +23,7 @@ namespace Web
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             // Register UserManagmentService 
             builder.Services.AddUserManagementServices(builder.Configuration);
-            builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
-            builder.Services.AddTransient<IMailService, MailService>();
+     
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerService();
