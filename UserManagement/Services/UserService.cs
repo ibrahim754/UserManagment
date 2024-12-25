@@ -64,7 +64,7 @@ namespace UserManagement
                     FirstName = model.FirstName,
                     LastName = model.LastName,
                 };
-
+                var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 if (model.Image is not null)
                 {
                     _logger.LogInformation($"uploading image for the user {model.Username}");
@@ -259,6 +259,11 @@ namespace UserManagement
                 return UserErrors.FetchUsersFailed;
 
             }
+        }
+        private int GenerateConfirmationCode()
+        {
+            Random random = new Random();
+            return random.Next(100000, 1000000);
         }
     }
 }

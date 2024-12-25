@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using System.ComponentModel.DataAnnotations;
 
 namespace UserManagement.DTOs
@@ -10,7 +11,6 @@ namespace UserManagement.DTOs
         public string? LastName { get; set; }
 
         public string Username { get; set; }
-        [EmailAddress]
         public string Email { get; set; }
         public IFormFile? Image { get; set; }
 

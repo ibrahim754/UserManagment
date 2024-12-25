@@ -1,9 +1,10 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
-using ErrorOr;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using UserManagement.Interfaces;
+using UserManagement.Errors;
+using ErrorOr;
 
 namespace UserManagement.Services
 {
@@ -12,6 +13,7 @@ namespace UserManagement.Services
         private readonly Cloudinary _cloudinary;
         private readonly HttpClient _httpClient;
         private readonly ILogger<CloudinaryService> _logger;
+
         public CloudinaryService(Cloudinary cloudinary, HttpClient httpClient, ILogger<CloudinaryService> logger)
         {
             _cloudinary = cloudinary ?? throw new ArgumentNullException(nameof(cloudinary));
@@ -23,9 +25,8 @@ namespace UserManagement.Services
         {
             try
             {
-
                 if (imageFile == null)
-                    return ErrorOr.Error.Validation("InvalidImage", "Image file cannot be null.");
+                    return UploadImageError.InvalidImage;
 
                 using var stream = imageFile.OpenReadStream();
                 var uploadParams = new ImageUploadParams
@@ -41,19 +42,19 @@ namespace UserManagement.Services
                     return uploadResult.SecureUrl;
                 }
 
-                return ErrorOr.Error.Failure("UploadFailed", "Image upload failed.");
+                return UploadImageError.UploadFailed;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred during image upload");
-                return ErrorOr.Error.Failure("UploadException", "An unexpected error occurred while uploading the image.");
+                return UploadImageError.UploadException;
             }
         }
+
         public async Task<ErrorOr<byte[]>> DownloadImageAsync(string imageUrl)
         {
-
             if (string.IsNullOrEmpty(imageUrl))
-                return ErrorOr.Error.Validation("InvalidUrl", "Image URL cannot be null or empty.");
+                return DownloadImageError.InvalidUrl;
 
             try
             {
@@ -62,7 +63,7 @@ namespace UserManagement.Services
             }
             catch (Exception)
             {
-                return ErrorOr.Error.Failure("DownloadFailed", "Failed to download image.");
+                return DownloadImageError.DownloadFailed;
             }
         }
     }
