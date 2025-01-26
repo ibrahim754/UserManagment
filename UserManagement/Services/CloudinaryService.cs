@@ -26,7 +26,7 @@ namespace UserManagement.Services
             try
             {
                 if (imageFile == null)
-                    return UploadImageError.InvalidImage;
+                    return CloudinaryErrors.InvalidImage;
 
                 using var stream = imageFile.OpenReadStream();
                 var uploadParams = new ImageUploadParams
@@ -42,19 +42,19 @@ namespace UserManagement.Services
                     return uploadResult.SecureUrl;
                 }
 
-                return UploadImageError.UploadFailed;
+                return CloudinaryErrors.UploadFailed;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred during image upload");
-                return UploadImageError.UploadException;
+                return CloudinaryErrors.UploadException;
             }
         }
 
         public async Task<ErrorOr<byte[]>> DownloadImageAsync(string imageUrl)
         {
             if (string.IsNullOrEmpty(imageUrl))
-                return DownloadImageError.InvalidUrl;
+                return CloudinaryErrors.InvalidUrl;
 
             try
             {
@@ -63,7 +63,7 @@ namespace UserManagement.Services
             }
             catch (Exception)
             {
-                return DownloadImageError.DownloadFailed;
+                return CloudinaryErrors.DownloadFailed;
             }
         }
     }

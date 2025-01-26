@@ -2,7 +2,6 @@
 using UserManagement.Interfaces;
 using ErrorOr;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Build.Framework;
 using Microsoft.Extensions.Logging;
 
 namespace UserManagement.Controllers
@@ -13,6 +12,7 @@ namespace UserManagement.Controllers
     {
         private readonly ICloudinaryService _cloudinaryService;
         private readonly ILogger<CloudinaryController> _logger;
+
         public CloudinaryController(ICloudinaryService cloudinaryService, ILogger<CloudinaryController> logger)
         {
             _cloudinaryService = cloudinaryService;
@@ -21,7 +21,7 @@ namespace UserManagement.Controllers
 
         // Endpoint to upload an image
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadImage([FromForm] IFormFile imageFile)
+        public async Task<IActionResult> UploadImage(IFormFile imageFile)
         {
             try
             {
@@ -29,14 +29,13 @@ namespace UserManagement.Controllers
 
                 return result.Match<IActionResult>(
                     success => Ok(new { Url = success.ToString() }),
-                    error => Problem(statusCode: 400, detail: error.First().Description)
+                    error => Problem(statusCode: 400, detail: error.First().Description ?? "An error occurred while uploading the image.")
                 );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An Error Occoured While Uploading the image");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during Uploading the image.");
-
+                _logger.LogError(ex, "An error occurred while uploading the image");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during the upload process.");
             }
         }
 
@@ -50,13 +49,13 @@ namespace UserManagement.Controllers
 
                 return result.Match<IActionResult>(
                     success => File(success, "image/jpeg"),
-                    error => Problem(statusCode: 400, detail: error.First().Description)
+                    error => Problem(statusCode: 400, detail: error.First().Description ?? "An error occurred while downloading the image.")
                 );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An Error Occoured While Downloading the image");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during Downloading the image.");
+                _logger.LogError(ex, "An error occurred while downloading the image");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during the download process.");
             }
         }
     }

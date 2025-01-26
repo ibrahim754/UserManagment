@@ -16,13 +16,8 @@ namespace UserManagement.Controllers
         [HttpPost("send")]
         public async Task<IActionResult> SendEmail([FromForm] MailRequestDto mailRequest)
         {
-            try {
-                await _mailService.SendEmailAsync(mailRequest.ToEmail, mailRequest.Subject, mailRequest.Body, mailRequest.attachments);
-                return Ok("send suffully");
-            }catch (Exception ex)
-            {
-                return 
-            }
-            }
+            await _mailService.SendEmailAsync(mailRequest.ToEmail, mailRequest.Subject, mailRequest.Body, mailRequest.attachments);
+            return Ok("send suffully");
+        }
     }
 }

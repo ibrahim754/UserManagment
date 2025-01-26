@@ -14,13 +14,13 @@ namespace UserManagement.Services
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly UserManager<User> _userManager;
         private readonly ILogger<RoleService> _logger;
-        private readonly IMemoryCache _cache;
-        public RoleService(RoleManager<IdentityRole> roleManager, UserManager<User> userManager, ILogger<RoleService> logger, IMemoryCache cache)
+        
+        public RoleService(RoleManager<IdentityRole> roleManager, UserManager<User> userManager, ILogger<RoleService> logger  )
         {
             _roleManager = roleManager;
             _userManager = userManager;
             _logger = logger;
-            _cache = cache;
+          
         }
 
         public async Task<ErrorOr<string>> AddRoleToUserAsync(AddRoleModel model)

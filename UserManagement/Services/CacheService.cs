@@ -2,14 +2,15 @@
 using Microsoft.Extensions.Caching.Memory;
 using UserManagement.Entites;
 using UserManagement.Interfaces;
-
+using UserManagement.Errors;   
 namespace UserManagement.Services
 {
-    public class CacheService  : ICacheService 
+    public class CacheService : ICacheService
     {
         private readonly IMemoryCache _cache;
         private readonly List<string> _cacheKeys;
         private const string CacheKeysList = "CacheKeys";
+
         public CacheService(IMemoryCache cache)
         {
             _cache = cache;
@@ -18,36 +19,63 @@ namespace UserManagement.Services
 
         public void AddToCache(CacheItem item, int durationInSeconds)
         {
-            _cache.Set(item.Key, item.Value, TimeSpan.FromSeconds(durationInSeconds));
+            try
+            {
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item), "Cache item cannot be null.");
 
-            TrackCacheKey(item.Key);
+                _cache.Set(item.Key, item.Value, TimeSpan.FromSeconds(durationInSeconds));
+                TrackCacheKey(item.Key);
+            }
+            catch (Exception)
+            {
+                throw new InvalidOperationException("An error occurred while adding the item to the cache.");
+            }
         }
 
-        public List<CacheItem > GetCacheContents()
+        public List<CacheItem> GetCacheContents()
         {
-            if (!_cache.TryGetValue(CacheKeysList, out List<string> keys))
+            try
             {
-                keys = new List<string>();
-            }
+                if (!_cache.TryGetValue(CacheKeysList, out List<string> keys))
+                {
+                    keys = new List<string>();
+                }
 
-            var result = new List<CacheItem>(); 
-            foreach (var key in keys)
+                var result = new List<CacheItem>();
+                foreach (var key in keys)
+                {
+                    if (_cache.TryGetValue(key, out var value))
+                    {
+                        result.Add(new CacheItem { Key = key, Value = value ?? "" });
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception)
+            {
+                throw new InvalidOperationException("An error occurred while retrieving cache contents.");
+            }
+        }
+
+        public ErrorOr<object> GetCacheItemByKey(string key)
+        {
+            try
             {
                 if (_cache.TryGetValue(key, out var value))
                 {
-                    result.Add(new CacheItem { Key = key, Value = value ?? "" });
+                    return value ?? Error.NotFound("Cache item found but is empty.");
                 }
+
+                return CacheErrors.CacheKeyNotFound;  // Using CacheErrors class
             }
-            return result;
-        }
-        public ErrorOr<object> GetCacheItemByKey(string key)
-        {
-            if (_cache.TryGetValue(key, out var value))
+            catch (Exception)
             {
-                return value ?? Error.NotFound(description: " ");
+                return CacheErrors.InternalServerError;  // Using CacheErrors class
             }
-            return Error.NotFound("Key Not Found")
         }
+
         private void TrackCacheKey(string key)
         {
             if (!_cache.TryGetValue(CacheKeysList, out List<string> keys))

@@ -1,11 +1,12 @@
-﻿
-using MailKit.Net.Smtp;
+﻿using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using UserManagement.Entites;
 using UserManagement.Interfaces;
+using UserManagement.Errors;
+using ErrorOr;
+using UserManagement.Entites;
 
 namespace UserManagement.Services
 {
@@ -18,10 +19,14 @@ namespace UserManagement.Services
             _mailSettings = mailSettings.Value;
         }
 
-        public async Task SendEmailAsync(string mailTo, string subject, string body, IList<IFormFile> attachments = null)
+        public async Task<ErrorOr<bool>> SendEmailAsync(string mailTo, string subject, string body, IList<IFormFile> attachments = null)
         {
             try
             {
+                // Validate email format
+                if (string.IsNullOrEmpty(mailTo) || !mailTo.Contains('@'))
+                    return MailErrors.InvalidEmail;
+
                 var email = new MimeMessage
                 {
                     Sender = MailboxAddress.Parse(_mailSettings.Username),
@@ -32,7 +37,8 @@ namespace UserManagement.Services
 
                 var builder = new BodyBuilder();
 
-                if (attachments != null)
+                // Handle attachments
+                if (attachments != null && attachments.Any())
                 {
                     foreach (var file in attachments)
                     {
@@ -42,6 +48,10 @@ namespace UserManagement.Services
                             file.CopyTo(ms);
                             builder.Attachments.Add(file.FileName, ms.ToArray(), ContentType.Parse(file.ContentType));
                         }
+                        else
+                        {
+                            return MailErrors.AttachmentError;
+                        }
                     }
                 }
 
@@ -50,17 +60,18 @@ namespace UserManagement.Services
                 email.From.Add(new MailboxAddress(_mailSettings.DisplayName, _mailSettings.Username));
 
                 using var smtp = new SmtpClient();
-                smtp.Connect(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
-                smtp.Authenticate(_mailSettings.Username, _mailSettings.Password);
+                await smtp.ConnectAsync(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
+                await smtp.AuthenticateAsync(_mailSettings.Username, _mailSettings.Password);
 
                 await smtp.SendAsync(email);
-                Console.WriteLine($"Email sent successfully.{email}");
                 smtp.Disconnect(true);
+
+                return true;
             }
+          
             catch (Exception ex)
             {
-                Console.WriteLine($"Failed to send email: {ex.Message}");
-                throw; // Optionally re-throw the exception
+                return MailErrors.FailedToSendEmail;
             }
         }
     }

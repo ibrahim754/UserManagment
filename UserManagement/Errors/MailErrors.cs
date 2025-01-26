@@ -2,12 +2,31 @@
 
 namespace UserManagement.Errors
 {
-    public class MailErrors
+    public static class MailErrors
     {
-        public static Error InvalidEmail => Error.Validation("InvalidEmail", "Email address is invalid.");
-        public static Error AttachmentError => Error.Failure("AttachmentError", "Error occurred while attaching the file.");
-        public static Error EmailSendFailed => Error.Failure("EmailSendFailed", "Failed to send the email.");
-        public static Error SmtpConnectionFailed => Error.Failure("SmtpConnectionFailed", "Failed to connect to the SMTP server.");
-        public static Error AuthenticationFailed => Error.Failure("AuthenticationFailed", "Failed to authenticate with the SMTP server.");
+        public static Error InvalidEmail => Error.Validation(
+            code: "InvalidEmail",
+            description: "The provided email address is invalid."
+        );
+
+        public static Error FailedToSendEmail => Error.Failure(
+            code: "FailedToSendEmail",
+            description: "An error occurred while sending the email. Please try again later."
+        );
+
+        public static Error AttachmentError => Error.Failure(
+            code: "AttachmentError",
+            description: "An error occurred while handling email attachments."
+        );
+
+        public static Error SmtpConnectionFailed => Error.Failure(
+            code: "SmtpConnectionFailed",
+            description: "Failed to connect to the SMTP server. Please check your SMTP configuration."
+        );
+
+        public static Error AuthenticationFailed => Error.Failure(
+            code: "AuthenticationFailed",
+            description: "Failed to authenticate with the SMTP server. Please check your credentials."
+        );
     }
 }
