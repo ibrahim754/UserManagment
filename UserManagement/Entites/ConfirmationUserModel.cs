@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 
-namespace UserManagement.DTOs
+namespace UserManagement.Entites
 {
-    public class RegisterModel
+    public class ConfirmationUserModel
     {
         public string? FirstName { get; set; }
 
@@ -10,7 +10,7 @@ namespace UserManagement.DTOs
 
         public string Username { get; set; }
         public string Email { get; set; }
-        public IFormFile? Image { get; set; }
+        public Uri? Image { get; set; }
 
         public string Password { get; set; }
     }

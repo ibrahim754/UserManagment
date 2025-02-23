@@ -17,7 +17,7 @@ namespace UserManagement.Services
             _cacheKeys = new List<string>();
         }
 
-        public void AddToCache(CacheItem item, int durationInSeconds)
+        public void AddToCache(CacheItem item, long durationInSeconds)
         {
             try
             {

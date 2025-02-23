@@ -5,7 +5,7 @@ namespace UserManagement.Interfaces
 {
     public interface ICacheService 
     {
-        void AddToCache(CacheItem item, int durationInSeconds);
+        void AddToCache(CacheItem item, long durationInSeconds);
         List<CacheItem > GetCacheContents();
         ErrorOr<object> GetCacheItemByKey(string key);
     }

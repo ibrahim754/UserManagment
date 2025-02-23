@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using ErrorOr;
 using UserManagement.Interfaces;
 using UserManagement.DTOs;
 

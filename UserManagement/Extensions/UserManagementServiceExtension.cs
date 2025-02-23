@@ -27,7 +27,7 @@ namespace UserManagement.Extensions
             services.AddCloudinary(configuration);
             services.AddUserManagementDependencies();
             services.AddEmailConfiguration(configuration);
-            services.AddPendingRegistrationConfiguration();
+            //services.AddPendingRegistrationConfiguration();
             services.AddCacheConfiguration();
             return services;
         }
@@ -134,11 +134,11 @@ namespace UserManagement.Extensions
             services.AddTransient<IMailService, MailService>();
             return services;
         }
-        private static IServiceCollection AddPendingRegistrationConfiguration(this IServiceCollection services)
-        {
-            services.AddSingleton<IPendingRegistrationService, PendingRegistrationService>();
-            return services;
-        }
+        //private static IServiceCollection AddPendingRegistrationConfiguration(this IServiceCollection services)
+        //{
+        //    services.AddSingleton<IPendingRegistrationService, PendingRegistrationService>();
+        //    return services;
+        //}
         private static IServiceCollection AddCacheConfiguration(this IServiceCollection services)
         {
             services.AddMemoryCache();

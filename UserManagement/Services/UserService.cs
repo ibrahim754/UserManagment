@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 using UserManagement.Interfaces;
 using UserManagement.DTOs;
 using UserManagement.Errors;
+using UserManagement.Entites;
+using System.Security.Cryptography;
 
 namespace UserManagement
 {
@@ -22,8 +24,11 @@ namespace UserManagement
         private readonly UserManagmentDbContext _UserManagmentDbContext;
         private readonly ICloudinaryService _cloudinaryService;
         private readonly SignInManager<User> _signInManager;
+        private readonly IMailService _mailService;
+        private readonly ICacheService _cacheService;   
         public UserService(UserManager<User> userManager, RoleManager<IdentityRole> roleManager,
-            IOptions<JWT> jwt, ITokenService tokenService, ILogger<UserService> logger, UserManagmentDbContext userManagmentDbContext, ICloudinaryService cloudinaryService, SignInManager<User> signInManager)
+            IOptions<JWT> jwt, ITokenService tokenService, ILogger<UserService> logger, UserManagmentDbContext userManagmentDbContext,
+            ICloudinaryService cloudinaryService, SignInManager<User> signInManager, IMailService mailService,ICacheService cacheService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -33,9 +38,12 @@ namespace UserManagement
             _UserManagmentDbContext = userManagmentDbContext;
             _cloudinaryService = cloudinaryService;
             _signInManager = signInManager;
+            _mailService = mailService;
+            _cacheService = cacheService;
+
         }
 
-        public async Task<ErrorOr<AuthModel>> RegisterAsync(RegisterModel model, UserAgent userAgent)
+        public async Task<ErrorOr<Guid>> RegisterAsync(RegisterModel model, UserAgent userAgent)
         {
             try
             {
@@ -53,18 +61,15 @@ namespace UserManagement
                     return UserErrors.UsernameAlreadyRegistered;
                 }
 
-                _logger.LogDebug("User device ID: {Device}, IP: {Ip}", userAgent.UserDevice, userAgent.UserIp);
-
-
-
-                var user = new User
+                _logger.LogInformation("User device ID: {Device}, IP: {Ip} trying to register new account with email {email}", userAgent.UserDevice, userAgent.UserIp, model.Email);
+                PendingRegistration confirmationUserModel = new PendingRegistration()
                 {
-                    UserName = model.Username,
                     Email = model.Email,
                     FirstName = model.FirstName,
                     LastName = model.LastName,
+                    Password = model.Password,
+                    Username = model.Username
                 };
-                var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 if (model.Image is not null)
                 {
                     _logger.LogInformation($"uploading image for the user {model.Username}");
@@ -74,17 +79,60 @@ namespace UserManagement
                         _logger.LogWarning("Error Occoured while Saving the user image");
                         return cloudResult.Errors.FirstOrDefault();
                     }
-                    user.Image = cloudResult.Value;
+                    confirmationUserModel.Image = cloudResult.Value;
                 }
-
+                int confirmationCodeDuration = 15;
+                var registerProccessId = Guid.NewGuid();    
+                confirmationUserModel.ConfirmationCode = GenerateSecureConfirmationCode();
+                var sendEmailResult =  await _mailService.SendEmailAsync(model.Email,"Email Confirmation",
+                   $"Dear User {model.FirstName} {model.LastName}\n," +
+                   $"Please confirm your registration\n" +
+                   $"Here is your confirmation code : {confirmationUserModel.ConfirmationCode}\n" +
+                   $"Please Note that the confirmation code is only valid for {confirmationCodeDuration} mintues\n" +
+                   $"With All Wishes");
+                if(sendEmailResult.IsError)
+                {
+                    return sendEmailResult.Errors.FirstOrDefault(); 
+                }
+                _cacheService.AddToCache(new CacheItem { Key = registerProccessId.ToString(), Value = confirmationUserModel }, confirmationCodeDuration * 60);
+                return  registerProccessId;
+                 
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred during registration.");
+                return UserErrors.FetchUsersFailed;
+            }
+        }
+        public async Task<ErrorOr<AuthModel>> ConfirmRegisterAsync(ConfirmationUserDto confirmationUser, UserAgent userAgent)
+        {
+            try
+            {
+                 var cacheResult = _cacheService.GetCacheItemByKey(confirmationUser.registerationId.ToString());
+                if (cacheResult.IsError)
+                {
+                    return cacheResult.Errors.FirstOrDefault();
+                }
+                if (!(cacheResult.Value is PendingRegistration model))
+                {
+                    return Error.Failure("Cache item type conversion to ConfirmationUserModel failed.");
+                }
+                if(model.ConfirmationCode != confirmationUser.confirmationCode)
+                {
+                    return Error.Failure("Invalid confirmation code.");
+                }
+                var user = new User
+                {
+                    UserName = model.Username,
+                    Email = model.Email,
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Image = model.Image
+                };
+                var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var result = await _userManager.CreateAsync(user, model.Password);
 
-                if (!result.Succeeded)
-                {
-                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                    _logger.LogError("User creation failed: {Errors}", errors);
-                    return Error.Failure(description: errors);
-                }
+             
 
                 await _userManager.AddToRoleAsync(user, "User");
                 _logger.LogInformation("User {Username} assigned role: User", model.Username);
@@ -115,7 +163,6 @@ namespace UserManagement
                 return UserErrors.FetchUsersFailed;
             }
         }
-
         public async Task<ErrorOr<AuthModel>> LogInAsync(TokenRequestModel model, UserAgent userAgent)
         {
             try
@@ -260,10 +307,25 @@ namespace UserManagement
 
             }
         }
-        private int GenerateConfirmationCode()
+        private static string GenerateSecureConfirmationCode()
         {
-            Random random = new Random();
-            return random.Next(100000, 1000000);
+             
+            const int minValue = 100000;
+            const int maxValue = 999999 + 1;  
+
+           
+            byte[] randomBytes = new byte[4];  
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomBytes);
+            }
+            int randomNumber = BitConverter.ToInt32(randomBytes, 0);
+
+            randomNumber = Math.Abs(randomNumber % (maxValue - minValue)) + minValue;
+
+            return randomNumber.ToString("D6");  
         }
+
+
     }
 }

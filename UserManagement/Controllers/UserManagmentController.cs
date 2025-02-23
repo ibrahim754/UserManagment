@@ -1,12 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using UserManagement.Models;
-using ErrorOr;
 using UserManagement.Interfaces;
 using UserManagement.DTOs;
 using Microsoft.Extensions.Logging;
 using UserManagement.Controllers;
-using Microsoft.AspNetCore.Authentication;
 
 namespace Web.Controllers
 {
@@ -22,9 +19,8 @@ namespace Web.Controllers
             _userService = authService;
             _logger = logger;
         }
-
         [HttpPost("register")]
-        public async Task<IActionResult> RegisterAsync([FromForm]RegisterModel model)
+        public async Task <IActionResult> RegisterAsync(RegisterModel model )
         {
             try
             {
@@ -35,15 +31,14 @@ namespace Web.Controllers
                     UserDevice = HttpContext.Request.Headers["User-Agent"].ToString(),
                     UserIp = HttpContext.Connection.RemoteIpAddress?.ToString()
                 };
- 
+
                 var result = await _userService.RegisterAsync(model, userAgent);
 
                 return result.Match(
-                    authModel =>
+                    Guid =>
                     {
-                        SetRefreshTokenInCookie(authModel.RefreshToken, authModel.RefreshTokenExpiration);
-                        _logger.LogInformation("User {UserName} registered successfully", authModel.Username);
-                        return Ok(authModel);
+                         
+                        return Ok(Guid);
                     },
                     errors =>
                     {
@@ -54,6 +49,41 @@ namespace Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while registering user with email {Email}", model.Email);
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during registration.");
+            }
+        }
+
+        [HttpPost("confirm")]
+        public async Task<IActionResult> ConfirmAsync(ConfirmationUserDto confirmationUser)
+        {
+            try
+            {
+                _logger.LogInformation("Attempting to register user with register id {id}", confirmationUser.registerationId);
+
+                var userAgent = new UserAgent
+                {
+                    UserDevice = HttpContext.Request.Headers["User-Agent"].ToString(),
+                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString()
+                };
+
+                var result = await _userService.ConfirmRegisterAsync(confirmationUser, userAgent);
+
+                return result.Match(
+                    authModel =>
+                    {
+                        SetRefreshTokenInCookie(authModel.RefreshToken, authModel.RefreshTokenExpiration);
+                        _logger.LogInformation("User {UserName} registered successfully", authModel.Username);
+                        return Ok(authModel);
+                    },
+                    errors =>
+                    {
+                        _logger.LogWarning("User registration failed for register id {id}", confirmationUser.registerationId);
+                        return Problem(errors);
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while registering  register id {id}", confirmationUser.registerationId);
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during registration.");
             }
         }
