@@ -48,25 +48,25 @@ namespace UserManagement.Controllers
         {
             try
             {
-                _logger.LogInformation("Attempting to add role {Role} to user {UserId}.", model.Role, model.UserId);
+                _logger.LogInformation("Attempting to add role {Role} to user {userIdentifier}.", model.Role, model.UserId);
 
                 var result = await _roleService.AddRoleToUserAsync(model);
 
                 return result.Match(
                     _ =>
                     {
-                        _logger.LogInformation("Role {Role} added successfully to user {UserId}.", model.Role, model.UserId);
+                        _logger.LogInformation("Role {Role} added successfully to user {userIdentifier}.", model.Role, model.UserId);
                         return Ok($"Role '{model.Role}' added to user with ID '{model.UserId}'.");
                     },
                     errors =>
                     {
-                        _logger.LogWarning("Failed to add role {Role} to user {UserId}. Errors: {Errors}", model.Role, model.UserId, errors);
+                        _logger.LogWarning("Failed to add role {Role} to user {userIdentifier}. Errors: {Errors}", model.Role, model.UserId, errors);
                         return Problem(errors);
                     });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while adding role {Role} to user {UserId}.", model.Role, model.UserId);
+                _logger.LogError(ex, "An error occurred while adding role {Role} to user {userIdentifier}.", model.Role, model.UserId);
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while adding the role.");
             }
         }

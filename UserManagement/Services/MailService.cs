@@ -13,17 +13,17 @@ namespace UserManagement.Services
     public class MailService : IMailService
     {
         private readonly MailSettings _mailSettings;
-
-        public MailService(IOptions<MailSettings> mailSettings)
+        private readonly IFormateService _formateService;
+        public MailService(IOptions<MailSettings> mailSettings, IFormateService formateService)
         {
             _mailSettings = mailSettings.Value;
+            _formateService = formateService;
         }
 
         public async Task<ErrorOr<bool>> SendEmailAsync(string mailTo, string subject, string body, IList<IFormFile> attachments = null)
         {
             try
             {
-                // Validate email format
                 if (string.IsNullOrEmpty(mailTo) || !mailTo.Contains('@'))
                     return MailErrors.InvalidEmail;
 
@@ -37,6 +37,15 @@ namespace UserManagement.Services
 
                 var builder = new BodyBuilder();
 
+                // Create HTML email template
+                var htmlBody = _formateService.GenerateHtmlBody(_mailSettings.DisplayName ?? "No Name", body);
+                if(htmlBody.IsError)
+                {
+                    return Error.Failure(description: "can not generate Html Body");
+                }
+
+                builder.HtmlBody = htmlBody.Value;
+
                 // Handle attachments
                 if (attachments != null && attachments.Any())
                 {
@@ -45,7 +54,7 @@ namespace UserManagement.Services
                         if (file.Length > 0)
                         {
                             using var ms = new MemoryStream();
-                            file.CopyTo(ms);
+                            await file.CopyToAsync(ms);
                             builder.Attachments.Add(file.FileName, ms.ToArray(), ContentType.Parse(file.ContentType));
                         }
                         else
@@ -55,22 +64,20 @@ namespace UserManagement.Services
                     }
                 }
 
-                builder.HtmlBody = body;
-                email.Body = builder.ToMessageBody();
                 email.From.Add(new MailboxAddress(_mailSettings.DisplayName, _mailSettings.Username));
+                email.Body = builder.ToMessageBody();
 
                 using var smtp = new SmtpClient();
                 await smtp.ConnectAsync(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
                 await smtp.AuthenticateAsync(_mailSettings.Username, _mailSettings.Password);
-
                 await smtp.SendAsync(email);
-                smtp.Disconnect(true);
+                await smtp.DisconnectAsync(true);
 
                 return true;
             }
-          
             catch (Exception ex)
             {
+                // Consider logging the exception here
                 return MailErrors.FailedToSendEmail;
             }
         }

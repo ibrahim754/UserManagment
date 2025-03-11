@@ -47,7 +47,7 @@ namespace Web.Migrations
             migrationBuilder.AddForeignKey(
                 name: "FK_RefreshTokens_AspNetUsers_UserId",
                 table: "RefreshTokens",
-                column: "UserId",
+                column: "userIdentifier",
                 principalTable: "AspNetUsers",
                 principalColumn: "Id");
         }
@@ -94,7 +94,7 @@ namespace Web.Migrations
             migrationBuilder.AddForeignKey(
                 name: "FK_RefreshTokens_AspNetUsers_UserId",
                 table: "RefreshTokens",
-                column: "UserId",
+                column: "userIdentifier",
                 principalTable: "AspNetUsers",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);

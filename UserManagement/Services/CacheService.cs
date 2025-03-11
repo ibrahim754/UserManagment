@@ -10,7 +10,7 @@ namespace UserManagement.Services
         private readonly IMemoryCache _cache;
         private readonly List<string> _cacheKeys;
         private const string CacheKeysList = "CacheKeys";
-
+        private const long maxPeriodAtMemoryInSeconds = 24 * 60 * 60;
         public CacheService(IMemoryCache cache)
         {
             _cache = cache;
@@ -22,8 +22,13 @@ namespace UserManagement.Services
             try
             {
                 if (item == null)
+                {
                     throw new ArgumentNullException(nameof(item), "Cache item cannot be null.");
-
+                }
+                if(durationInSeconds> maxPeriodAtMemoryInSeconds)
+                {
+                    throw new ArgumentNullException(nameof(item), $"Duration in Memory can not exceed {maxPeriodAtMemoryInSeconds}");
+                }
                 _cache.Set(item.Key, item.Value, TimeSpan.FromSeconds(durationInSeconds));
                 TrackCacheKey(item.Key);
             }
@@ -68,11 +73,11 @@ namespace UserManagement.Services
                     return value ?? Error.NotFound("Cache item found but is empty.");
                 }
 
-                return CacheErrors.CacheKeyNotFound;  // Using CacheErrors class
+                return CacheErrors.CacheKeyNotFound;   
             }
             catch (Exception)
             {
-                return CacheErrors.InternalServerError;  // Using CacheErrors class
+                return CacheErrors.InternalServerError;    
             }
         }
 

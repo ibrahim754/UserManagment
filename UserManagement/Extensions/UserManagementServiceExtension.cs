@@ -52,8 +52,9 @@ namespace UserManagement.Extensions
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequiredLength = 6;
                 options.Password.RequiredUniqueChars = 1;
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(1);
                 options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.AllowedForNewUsers = true;
             })
             .AddEntityFrameworkStores<UserManagmentDbContext>()
             .AddDefaultTokenProviders();
@@ -122,9 +123,12 @@ namespace UserManagement.Extensions
         private static IServiceCollection AddUserManagementDependencies(this IServiceCollection services)
         {
             services.AddScoped<ICloudinaryService, CloudinaryService>();
-            services.AddScoped<IUserService, UserService>();
             services.AddScoped<IRoleService, RoleService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IFormateService, FormateService>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IRegistrationService, RegistrationService>();
+            services.AddScoped<IUserManagementService, UserManagementService>();
  
             return services;
         }

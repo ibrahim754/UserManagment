@@ -11,124 +11,19 @@ namespace Web.Controllers
     [ApiController]
     public class UserManagmentController : BaseController
     {
-        private readonly IUserService _userService;
+        private readonly IUserManagementService _userManagmentService;
         private readonly ILogger<UserManagmentController> _logger;
 
-        public UserManagmentController(IUserService authService, ILogger<UserManagmentController> logger)
+        public UserManagmentController(IUserManagementService  userManagmentService, ILogger<UserManagmentController> logger)
         {
-            _userService = authService;
+            _userManagmentService = userManagmentService;
             _logger = logger;
-        }
-        [HttpPost("register")]
-        public async Task <IActionResult> RegisterAsync(RegisterModel model )
-        {
-            try
-            {
-                _logger.LogInformation("Attempting to register user with email {Email}", model.Email);
-
-                var userAgent = new UserAgent
-                {
-                    UserDevice = HttpContext.Request.Headers["User-Agent"].ToString(),
-                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString()
-                };
-
-                var result = await _userService.RegisterAsync(model, userAgent);
-
-                return result.Match(
-                    Guid =>
-                    {
-                         
-                        return Ok(Guid);
-                    },
-                    errors =>
-                    {
-                        _logger.LogWarning("User registration failed for email {Email}", model.Email);
-                        return Problem(errors);
-                    });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while registering user with email {Email}", model.Email);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during registration.");
-            }
-        }
-
-        [HttpPost("confirm")]
-        public async Task<IActionResult> ConfirmAsync(ConfirmationUserDto confirmationUser)
-        {
-            try
-            {
-                _logger.LogInformation("Attempting to register user with register id {id}", confirmationUser.registerationId);
-
-                var userAgent = new UserAgent
-                {
-                    UserDevice = HttpContext.Request.Headers["User-Agent"].ToString(),
-                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString()
-                };
-
-                var result = await _userService.ConfirmRegisterAsync(confirmationUser, userAgent);
-
-                return result.Match(
-                    authModel =>
-                    {
-                        SetRefreshTokenInCookie(authModel.RefreshToken, authModel.RefreshTokenExpiration);
-                        _logger.LogInformation("User {UserName} registered successfully", authModel.Username);
-                        return Ok(authModel);
-                    },
-                    errors =>
-                    {
-                        _logger.LogWarning("User registration failed for register id {id}", confirmationUser.registerationId);
-                        return Problem(errors);
-                    });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while registering  register id {id}", confirmationUser.registerationId);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during registration.");
-            }
-        }
-
-        [HttpPost("logIn")]
-        public async Task<IActionResult> GetTokenAsync([FromBody] TokenRequestModel model)
-        {
-            try
-            {
-                _logger.LogInformation("Attempting to generate token for user with email {Email}", model.Email);
-
-                var userAgent = new UserAgent
-                {
-                    UserDevice = HttpContext.Request.Headers["User-Agent"].ToString(),
-                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString()
-                };
-
-                var result = await _userService.LogInAsync(model, userAgent);
-
-                return result.Match(
-                    authModel =>
-                    {
-                        if (!string.IsNullOrEmpty(authModel.RefreshToken))
-                            SetRefreshTokenInCookie(authModel.RefreshToken, authModel.RefreshTokenExpiration);
-
-                        _logger.LogInformation("Token generated successfully for user {UserName}", authModel.Username);
-                        return Ok(authModel);
-                    },
-                    errors =>
-                    {
-                        _logger.LogWarning("Token generation failed for user with email {Email}", model.Email);
-                        return Problem(errors);
-                    });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while generating token for user with email {Email}", model.Email);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during token generation.");
-            }
         }
 
         [HttpPost("changePassword")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest model)
         {
-            if (string.IsNullOrWhiteSpace(model.UserId) ||
+            if (string.IsNullOrWhiteSpace(model.userIdentifier) ||
                 string.IsNullOrWhiteSpace(model.CurrentPassword) ||
                 string.IsNullOrWhiteSpace(model.NewPassword))
             {
@@ -138,25 +33,25 @@ namespace Web.Controllers
 
             try
             {
-                _logger.LogInformation("Attempting to change password for user {UserId}", model.UserId);
+                _logger.LogInformation("Attempting to change password for user {userIdentifier}", model.userIdentifier);
 
-                var result = await _userService.ChangePasswordAsync(model);
+                var result = await _userManagmentService.ChangePasswordAsync(model);
 
                 return result.Match(
                     success =>
                     {
-                        _logger.LogInformation("Password changed successfully for user {UserId}", model.UserId);
+                        _logger.LogInformation("Password changed successfully for user {userIdentifier}", model.userIdentifier);
                         return Ok("Password changed successfully");
                     },
                     errors =>
                     {
-                        _logger.LogWarning("Password change failed for user {UserId}", model.UserId);
+                        _logger.LogWarning("Password change failed for user {userIdentifier}", model.userIdentifier);
                         return Problem(errors);
                     });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while changing password for user {UserId}", model.UserId);
+                _logger.LogError(ex, "An error occurred while changing password for user {userIdentifier}", model.userIdentifier);
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during password change.");
             }
         }
@@ -165,7 +60,7 @@ namespace Web.Controllers
         {
             try
             {
-                var result = await _userService.BrowseAsync();
+                var result = await _userManagmentService.BrowseAsync();
                 return result.Match(
                     success =>
                     {
@@ -191,7 +86,7 @@ namespace Web.Controllers
         {
             try
             {
-                var result = await _userService.BlockUser(userId);
+                var result = await _userManagmentService.BlockUser(userId);
                 return result.Match(
                     success =>
                     {
@@ -212,26 +107,6 @@ namespace Web.Controllers
 
             }
         }
-        private void SetRefreshTokenInCookie(string refreshToken, DateTime expires)
-        {
-            try
-            {
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Expires = expires.ToLocalTime(),
-                    Secure = true,
-                    IsEssential = true,
-                    SameSite = SameSiteMode.None
-                };
-
-                Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-                _logger.LogInformation("Refresh token set in cookie, expires at {Expiration}", expires);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to set refresh token in cookie.");
-            }
-        }
+      
     }
 }

@@ -1,13 +1,16 @@
 ﻿using ErrorOr;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Build.Framework;
+using Microsoft.Extensions.Logging;
 
 namespace UserManagement.Controllers
 {
     [ApiController]
-    public  class BaseController : ControllerBase
+    [Route("api/[controller]")]
+    public class BaseController : ControllerBase
     {
-        // Common problem method to handle errors and status codes.
+           
         protected IActionResult Problem(IEnumerable<Error> errors)
         {
             if (errors == null || !errors.Any())
@@ -51,5 +54,6 @@ namespace UserManagement.Controllers
                 _ => StatusCodes.Status500InternalServerError // Default to 500 if type is unknown
             };
         }
+       
     }
 }

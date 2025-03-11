@@ -30,7 +30,7 @@ namespace UserManagement
         {
             try
             {
-                _logger.LogInformation("Creating JWT token for user: {UserId}", user.Id);
+                _logger.LogInformation("Creating JWT token for user: {userIdentifier}", user.Id);
                 var userClaims = await _userManager.GetClaimsAsync(user);
                 var roles = await _userManager.GetRolesAsync(user);
                 var roleClaims = roles.Select(role => new Claim("roles", role)).ToList();
@@ -48,7 +48,7 @@ namespace UserManagement
                 var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
                 var signingCredentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
 
-                _logger.LogInformation("JWT token created successfully for user: {UserId}", user.Id);
+                _logger.LogInformation("JWT token created successfully for user: {userIdentifier}", user.Id);
 
                 return new JwtSecurityToken(
                     issuer: _jwt.Issuer,
@@ -59,7 +59,7 @@ namespace UserManagement
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating JWT token for user: {UserId}", user.Id);
+                _logger.LogError(ex, "Error creating JWT token for user: {userIdentifier}", user.Id);
                 throw;
             }
         }
@@ -182,7 +182,7 @@ namespace UserManagement
 
                 var jwtToken = await CreateJwtTokenAsync(user);
 
-                _logger.LogInformation("Token refreshed successfully for user: {UserId}", user.Id);
+                _logger.LogInformation("Token refreshed successfully for user: {userIdentifier}", user.Id);
 
                 return new AuthModel
                 {
