@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
 using System.Text;
 using UserManagement.DAL;
 using UserManagement.Entites;
@@ -34,11 +33,7 @@ namespace UserManagement.Extensions
 
         private static IServiceCollection AddLogging(this IServiceCollection services, IConfiguration configuration)
         {
-            Log.Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(configuration)
-                .CreateLogger();
-
-            services.AddMemoryCache();
+            //services.AddMemoryCache();
             return services;
         }
 
@@ -52,7 +47,7 @@ namespace UserManagement.Extensions
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequiredLength = 6;
                 options.Password.RequiredUniqueChars = 1;
-                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(1);
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.AllowedForNewUsers = true;
             })

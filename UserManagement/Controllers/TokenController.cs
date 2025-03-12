@@ -92,10 +92,15 @@ namespace UserManagement.Controllers
         }
 
       
-        private void SetRefreshTokenInCookie(string refreshToken, DateTime expires)
+        private void SetRefreshTokenInCookie(string? refreshToken, DateTime expires)
         {
             try
             {
+                if (refreshToken is null)
+                {
+                    return;
+                }
+
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,

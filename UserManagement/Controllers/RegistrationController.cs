@@ -28,7 +28,7 @@ namespace UserManagement.Controllers
                 var userAgent = new UserAgent
                 {
                     UserDevice = HttpContext.Request.Headers["User-Agent"].ToString(),
-                    UserIp = HttpContext.Connection.RemoteIpAddress?.ToString()
+                    UserIp = HttpContext.Connection?.RemoteIpAddress?.ToString()
                 };
 
                 var result = await _authService.RegisterAsync(model, userAgent);
@@ -86,10 +86,14 @@ namespace UserManagement.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during registration.");
             }
         }
-        private void SetRefreshTokenInCookie(string refreshToken, DateTime expires)
+        private void SetRefreshTokenInCookie(string? refreshToken, DateTime expires)
         {
             try
             {
+                if (refreshToken is null )
+                {
+                    return;
+                }
                 var cookieOptions = new CookieOptions
                 {
                     HttpOnly = true,

@@ -8,5 +8,7 @@ public interface IUserManagementService
     Task<ErrorOr<bool>> BlockUser(string userId);
     Task<ErrorOr<bool>> ActiveUser(string userId);
     Task<ErrorOr<string>> ChangePasswordAsync(ChangePasswordRequest changePassword);
+    Task<ErrorOr<string>> AddRoleToUserAsync(AddRoleModel model);
+
 
 }

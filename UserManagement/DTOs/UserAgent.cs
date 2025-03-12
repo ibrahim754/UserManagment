@@ -2,8 +2,8 @@
 {
     public class UserAgent
     {
-        public string UserDevice { get; set; }
-        public string UserIp { get; set; }
+        public string? UserDevice { get; set; }
+        public string? UserIp { get; set; }
 
     }
 }

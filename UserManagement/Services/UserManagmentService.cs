@@ -6,18 +6,21 @@ using UserManagement.DTOs;
 using UserManagement.Errors;
 using UserManagement.Models;
 
- 
+
 public class UserManagementService : IUserManagementService
 {
     private readonly UserManager<User> _userManager;
     private readonly ILogger<UserManagementService> _logger;
+    private readonly RoleManager<IdentityRole> _roleManager;
 
     public UserManagementService(
         UserManager<User> userManager,
-        ILogger<UserManagementService> logger)
+        ILogger<UserManagementService> logger,
+        RoleManager<IdentityRole> roleManager)
     {
         _userManager = userManager;
         _logger = logger;
+        _roleManager = roleManager;
     }
 
     public async Task<ErrorOr<IReadOnlyCollection<User>>> BrowseAsync()
@@ -43,12 +46,13 @@ public class UserManagementService : IUserManagementService
         {
             _logger.LogInformation("Change password request for user: {userIdentifier}", changePassword.userIdentifier);
 
-            var user = await _userManager.FindByIdAsync(changePassword.userIdentifier);
-            if (user is null)
+            var userExist = await ExistUser(changePassword.userIdentifier);
+            if (userExist.IsError)
             {
-                _logger.LogWarning("User not found for password change: {userIdentifier}", changePassword.userIdentifier);
-                return UserErrors.UserNotFound;
+                _logger.LogWarning("User with identifier {identifier} is not exist ", changePassword.userIdentifier);
+                return userExist.Errors;
             }
+            var user = userExist.Value;
 
             var checkPassword = await _userManager.CheckPasswordAsync(user, changePassword.CurrentPassword);
             if (!checkPassword)
@@ -74,17 +78,18 @@ public class UserManagementService : IUserManagementService
             return UserErrors.FetchUsersFailed;
         }
     }
-    public async Task<ErrorOr<bool>> ActiveUser(string userId)
+    public async Task<ErrorOr<bool>> ActiveUser(string userIdentifier)
     {
         try
         {
-
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user is null)
+            var userExist = await ExistUser(userIdentifier);
+            if (userExist.IsError)
             {
-                _logger.LogWarning("User is Not Found");
-                return UserErrors.UserNotFound;
+                _logger.LogWarning("User with identifier {identifier} is not exist ",  userIdentifier);
+
+                return userExist.Errors;
             }
+            var user = userExist.Value;
             user.LockoutEnabled = true;
             user.LockoutEnd = DateTime.UtcNow.AddMinutes(1);
             var result = await _userManager.UpdateAsync(user);
@@ -96,7 +101,7 @@ public class UserManagementService : IUserManagementService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"An error occurred while retrieving blocking the user sith id {userId}.");
+            _logger.LogError(ex, $"An error occurred while retrieving blocking the user sith id {userIdentifier}.");
             return UserErrors.FetchUsersFailed;
 
         }
@@ -108,7 +113,8 @@ public class UserManagementService : IUserManagementService
             var userExist = await ExistUser(userIdentifier);
             if (userExist.IsError)
             {
-                 return  userExist.Errors;
+                _logger.LogWarning("User with identifier {identifier} is not exist ", userIdentifier);
+                return userExist.Errors;
             }
             var user = userExist.Value;
             await _userManager.SetLockoutEnabledAsync(user, false);
@@ -126,6 +132,47 @@ public class UserManagementService : IUserManagementService
             _logger.LogError(ex, $"An error occurred while retrieving blocking the user with userIdentifier {userIdentifier}.");
             return UserErrors.FetchUsersFailed;
 
+        }
+    }
+    public async Task<ErrorOr<string>> AddRoleToUserAsync(AddRoleModel model)
+    {
+        try
+        {
+            var userExist = await ExistUser(model.userIdentifier);
+            if (userExist.IsError)
+            {
+                _logger.LogWarning("User with identifier {identifier} is not exist ", model.userIdentifier);
+                return userExist.Errors;
+            }
+            var user = userExist.Value;
+
+            if (!await _roleManager.RoleExistsAsync(model.Role))
+            {
+                _logger.LogWarning("Role {Role} does not exist.", model.Role);
+                return Error.Validation(description: "Invalid user ID or Role");
+            }
+
+            if (await _userManager.IsInRoleAsync(user, model.Role))
+            {
+                _logger.LogWarning("User {userIdentifier} is already in role {Role}", model.userIdentifier, model.Role);
+                return Error.Conflict(description: "User already assigned to this role");
+            }
+
+            var result = await _userManager.AddToRoleAsync(user, model.Role);
+            if (result.Succeeded)
+            {
+                _logger.LogInformation("Role {Role} successfully added to user {userIdentifier}", model.Role, model.userIdentifier);
+                return string.Empty;
+            }
+
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            _logger.LogError("Failed to add role {Role} to user {userIdentifier}. Errors: {Errors}", model.Role, model.userIdentifier, errors);
+            return Error.Failure(description: errors);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An unexpected error occurred while adding role {Role} to user {userIdentifier}", model.Role, model.userIdentifier);
+            return Error.Failure(description: "Something went wrong while assigning role");
         }
     }
     private async Task<ErrorOr<User>> ExistUser(string userIdentifier)

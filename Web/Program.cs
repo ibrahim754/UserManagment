@@ -1,6 +1,5 @@
 
-using Serilog;
-using UserManagement.Extensions;
+ using UserManagement.Extensions;
 using Web.Extensions;
 
 namespace Web
@@ -14,13 +13,11 @@ namespace Web
             // Add services to the container.
             // Add SeriLogConfig
    
-            Log.Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(builder.Configuration)
-                .CreateLogger();
-
+          
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
             // Register UserManagmentService 
             builder.Services.AddUserManagementServices(builder.Configuration);
      

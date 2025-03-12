@@ -12,59 +12,16 @@ namespace UserManagement.Services
     public class RoleService : IRoleService
     {
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly UserManager<User> _userManager;
-        private readonly ILogger<RoleService> _logger;
+         private readonly ILogger<RoleService> _logger;
         
-        public RoleService(RoleManager<IdentityRole> roleManager, UserManager<User> userManager, ILogger<RoleService> logger  )
+        public RoleService(RoleManager<IdentityRole> roleManager, ILogger<RoleService> logger  )
         {
             _roleManager = roleManager;
-            _userManager = userManager;
-            _logger = logger;
+             _logger = logger;
           
         }
 
-        public async Task<ErrorOr<string>> AddRoleToUserAsync(AddRoleModel model)
-        {
-            try
-            {
-                _logger.LogInformation("Attempting to add role {Role} to user {userIdentifier}", model.Role, model.UserId);
-
-                var user = await _userManager.FindByIdAsync(model.UserId);
-                if (user is null)
-                {
-                    _logger.LogWarning("User with ID {userIdentifier} not found.", model.UserId);
-                    return Error.Validation(description: "Invalid user ID or Role");
-                }
-
-                if (!await _roleManager.RoleExistsAsync(model.Role))
-                {
-                    _logger.LogWarning("Role {Role} does not exist.", model.Role);
-                    return Error.Validation(description: "Invalid user ID or Role");
-                }
-
-                if (await _userManager.IsInRoleAsync(user, model.Role))
-                {
-                    _logger.LogWarning("User {userIdentifier} is already in role {Role}", model.UserId, model.Role);
-                    return Error.Conflict(description: "User already assigned to this role");
-                }
-
-                var result = await _userManager.AddToRoleAsync(user, model.Role);
-                if (result.Succeeded)
-                {
-                    _logger.LogInformation("Role {Role} successfully added to user {userIdentifier}", model.Role, model.UserId);
-                    return string.Empty;
-                }
-
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                _logger.LogError("Failed to add role {Role} to user {userIdentifier}. Errors: {Errors}", model.Role, model.UserId, errors);
-                return Error.Failure(description: errors);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while adding role {Role} to user {userIdentifier}", model.Role, model.UserId);
-                return Error.Failure(description: "Something went wrong while assigning role");
-            }
-        }
+       
 
         public async Task<ErrorOr<bool>> AddNewRoleAsync(string roleName)
         {

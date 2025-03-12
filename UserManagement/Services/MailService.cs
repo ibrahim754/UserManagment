@@ -20,7 +20,7 @@ namespace UserManagement.Services
             _formateService = formateService;
         }
 
-        public async Task<ErrorOr<bool>> SendEmailAsync(string mailTo, string subject, string body, IList<IFormFile> attachments = null)
+        public async Task<ErrorOr<bool>> SendEmailAsync(string mailTo, string subject, string body, IList<IFormFile>? attachments )
         {
             try
             {
