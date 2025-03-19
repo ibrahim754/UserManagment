@@ -18,7 +18,7 @@ namespace UserManagement.Controllers
             _logger = logger;
         }
         [HttpPost("logIn")]
-        public async Task<IActionResult> GetTokenAsync( [FromQuery]TokenRequestModel model)
+        public async Task<IActionResult> GetTokenAsync(TokenRequestModel model)
         {
             try
             {

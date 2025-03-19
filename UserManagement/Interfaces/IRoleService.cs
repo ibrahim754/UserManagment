@@ -9,6 +9,7 @@ namespace UserManagement.Interfaces
  
         Task<ErrorOr<bool>> AddNewRoleAsync(string RoleName);
         Task<ErrorOr<bool>> DeleteRoleAsync(string RoleName);
+        Task<ErrorOr<bool>> IsExistAsync(string RoleName);
         Task<ErrorOr<IReadOnlyCollection<IdentityRole>>> BrowseAsync();
     }
 }

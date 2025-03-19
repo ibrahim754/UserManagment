@@ -20,8 +20,8 @@ namespace UserManagement.Errors
             code: "User.UserNotFound",
             description: "User not found.");
 
-        public static readonly Error IncorrectPasswordOrEmail = Error.Failure(
-            code: "User.IncorrectPasswordOrUserName",
+        public static readonly Error InvalidCredentials  = Error.Failure(
+            code: "User.InvalidCredentials ",
             description: "The password Or User Name is incorrect.");
 
         public static readonly Error IncorrectPassword = Error.Failure(

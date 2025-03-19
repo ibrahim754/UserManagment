@@ -1,6 +1,5 @@
 ﻿using ErrorOr;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
 using UserManagement.DTOs;
@@ -8,7 +7,7 @@ using UserManagement.Errors;
 using UserManagement.Interfaces;
 using UserManagement.Models;
 
- 
+
 public class AuthService : IAuthService
 {
     private readonly UserManager<User> _userManager;
@@ -35,23 +34,26 @@ public class AuthService : IAuthService
             _logger.LogInformation("Token request received for user: {Email}", model.Email);
 
             var authModel = new AuthModel();
-            var user = await _userManager.Users.Include(e => e.RefreshTokens).FirstOrDefaultAsync(e => e.Email == model.Email.ToString());
+            var user = await _userManager.FindByEmailAsync(model.Email);
+          
 
             if (user is null)
             {
                 _logger.LogWarning("Invalid login attempt for email: {Email}", model.Email);
-                return UserErrors.IncorrectPasswordOrEmail;
+                return UserErrors.InvalidCredentials ;
             }
-            var result = await _signInManager.PasswordSignInAsync(user.UserName, model.Password, isPersistent: false, lockoutOnFailure: true);
-            if (result.IsLockedOut)
-            {
-                _logger.LogWarning("User {username} Is Blocked Due To Multiple Login Fails", user.UserName);
-                return UserErrors.UserIsLockedOut;
-            }
-            else if (!result.Succeeded)
+            var result = await _signInManager.
+                PasswordSignInAsync(user.UserName??" ", model.Password, isPersistent: false, lockoutOnFailure: true);
+            if (!result.Succeeded)
             {
                 _logger.LogWarning("User {username} failed to logIn", user.UserName);
                 return UserErrors.LogInFailed;
+            }
+            if (result.IsLockedOut)
+            {
+              
+                _logger.LogWarning("User {username} Is Blocked Due To Multiple Login Fails", user.UserName);
+                return UserErrors.UserIsLockedOut;
             }
             _logger.LogDebug("Generating JWT for user: {Username}", user.UserName);
             var jwtSecurityToken = await _tokenService.CreateJwtTokenAsync(user);
@@ -67,7 +69,7 @@ public class AuthService : IAuthService
             if (user.RefreshTokens != null && user.RefreshTokens.Any(t => t.IsActive)) 
             {
                 var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
-                authModel.RefreshToken = activeRefreshToken.Token;
+                authModel.RefreshToken = activeRefreshToken?.Token;
                 authModel.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
                 _logger.LogInformation("Active refresh token found for user: {Username}", user.UserName);
             }
@@ -76,7 +78,7 @@ public class AuthService : IAuthService
                 var refreshToken = _tokenService.GenerateRefreshToken(userAgent);
                 authModel.RefreshToken = refreshToken.Token;
                 authModel.RefreshTokenExpiration = refreshToken.ExpiresOn;
-                user.RefreshTokens.Add(refreshToken);
+                user.RefreshTokens?.Add(refreshToken);
                 await _userManager.UpdateAsync(user);
                 _logger.LogInformation("New refresh token generated for user: {Username}", user.UserName);
             }
@@ -88,5 +90,18 @@ public class AuthService : IAuthService
             _logger.LogError(ex, "An error occurred while generating token.");
             return UserErrors.FetchUsersFailed;
         }
+    }
+
+    public Task<ErrorOr<bool>> LogOutAsync(string userIdentifier)
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+
+        }
+        throw new NotImplementedException();
     }
 }

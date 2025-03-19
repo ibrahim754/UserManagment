@@ -102,27 +102,34 @@ namespace UserManagement.Controllers
 
             }
         }
-    
-        private void SetRefreshTokenInCookie(string refreshToken, DateTime expires)
+        [HttpPost("checkRole")]
+        public async Task<IActionResult> IsExist(string roleName)
         {
             try
             {
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Expires = expires.ToLocalTime(),
-                    Secure = true,
-                    IsEssential = true,
-                    SameSite = SameSiteMode.None
-                };
+                
+                var result = await _roleService.IsExistAsync(roleName);
+                return result.Match(
+                  onSuccess =>
+                  {
+                      _logger.LogInformation("Role \"{roleName}\" is exist in my DB ",roleName);
+                      return Ok(onSuccess);
+                  },
+                  errors =>
+                  {
+                      _logger.LogWarning("Role \"{roleName}\" is not exist in my DB", roleName);
+                      return Problem(errors);
+                  });
 
-                Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-                _logger.LogInformation("Refresh token set in cookie, expires at {Expiration}.", expires);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to set refresh token in cookie.");
+                _logger.LogError(ex, "An error occurred while fetching the role \"{roleName}\"", roleName);
+                return StatusCode(StatusCodes.Status500InternalServerError, $"An error occurred while fetching the role: \"{roleName}\"");
+
             }
         }
+
+        
     }
 }

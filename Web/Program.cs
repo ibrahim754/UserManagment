@@ -1,5 +1,4 @@
-
- using UserManagement.Extensions;
+using UserManagement.Extensions;
 using Web.Extensions;
 
 namespace Web
@@ -17,29 +16,35 @@ namespace Web
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-
+            builder.Services.AddCors(options => {
+                options.AddPolicy("AllowAll", policy => {
+                    policy.AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowAnyOrigin()
+                          .WithExposedHeaders("SignalR-Status"); // For SignalR
+                });
+            });
             // Register UserManagmentService 
             builder.Services.AddUserManagementServices(builder.Configuration);
-     
-
+       
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerService();
             var app = builder.Build();
-
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            //app.UseMiddleware<ExceptionHandlingMiddleware>();
+            app.UseCors(); // Add this before other middleware
             //app.UseMiddleware<ApiResponseMiddleware>();
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
-
+ 
             app.MapControllers();
-
+            app.ConfigureApplication();
             app.Run();
         }
     }

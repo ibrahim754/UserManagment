@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using UserManagement.Interfaces;
 using UserManagement.DTOs;
 using Microsoft.Extensions.Logging;
 using UserManagement.Controllers;
-using UserManagement.Services;
 
 namespace Web.Controllers
 {

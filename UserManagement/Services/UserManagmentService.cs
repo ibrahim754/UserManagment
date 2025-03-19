@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using UserManagement.DTOs;
 using UserManagement.Errors;
+using UserManagement.Interfaces;
 using UserManagement.Models;
 
 
@@ -11,17 +12,18 @@ public class UserManagementService : IUserManagementService
 {
     private readonly UserManager<User> _userManager;
     private readonly ILogger<UserManagementService> _logger;
-    private readonly RoleManager<IdentityRole> _roleManager;
+    private readonly IRoleService _roleService;
 
     public UserManagementService(
         UserManager<User> userManager,
         ILogger<UserManagementService> logger,
-        RoleManager<IdentityRole> roleManager)
+        IRoleService roleService
+        )
     {
         _userManager = userManager;
         _logger = logger;
-        _roleManager = roleManager;
-    }
+        _roleService = roleService;
+     }
 
     public async Task<ErrorOr<IReadOnlyCollection<User>>> BrowseAsync()
     {
@@ -144,14 +146,15 @@ public class UserManagementService : IUserManagementService
                 _logger.LogWarning("User with identifier {identifier} is not exist ", model.userIdentifier);
                 return userExist.Errors;
             }
-            var user = userExist.Value;
-
-            if (!await _roleManager.RoleExistsAsync(model.Role))
+          
+            var roleExist = await _roleService.IsExistAsync(model.Role);
+            if (roleExist.IsError) 
             {
-                _logger.LogWarning("Role {Role} does not exist.", model.Role);
-                return Error.Validation(description: "Invalid user ID or Role");
+                _logger.LogWarning("An Error when Adding role {roleName} to the userIdentifier {UserId} , because {Errors}", model.Role, model.userIdentifier, roleExist.Errors);
+                return Error.Validation(description: "Role Is not Exist");
             }
 
+            var user = userExist.Value;
             if (await _userManager.IsInRoleAsync(user, model.Role))
             {
                 _logger.LogWarning("User {userIdentifier} is already in role {Role}", model.userIdentifier, model.Role);

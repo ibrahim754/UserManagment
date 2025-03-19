@@ -6,8 +6,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Quartz;
 using System.Text;
 using UserManagement.DAL;
+using UserManagement.DAL.Configurations.Quartz;
 using UserManagement.Entites;
 using UserManagement.Interfaces;
 using UserManagement.Models;
@@ -20,6 +22,7 @@ namespace UserManagement.Extensions
         public static IServiceCollection AddUserManagementServices(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddLogging(configuration);
+            services.AddSignalRDI();
             services.AddIdentityServices();
             services.AddDbContext(configuration);
             services.ConfigureJwtAuthentication(configuration);
@@ -27,13 +30,34 @@ namespace UserManagement.Extensions
             services.AddUserManagementDependencies();
             services.AddEmailConfiguration(configuration);
             //services.AddPendingRegistrationConfiguration();
+            services.AddQuartzDI(configuration);
             services.AddCacheConfiguration();
+            
             return services;
         }
 
         private static IServiceCollection AddLogging(this IServiceCollection services, IConfiguration configuration)
         {
             //services.AddMemoryCache();
+            return services;
+        } 
+        private static IServiceCollection AddSignalRDI(this IServiceCollection services )
+        {
+            services.AddSignalR();
+            return services;
+        }
+
+        private static IServiceCollection AddQuartzDI(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddQuartz(options =>
+            {
+
+            }
+            );
+            services.AddQuartzHostedService(options =>
+                    options.WaitForJobsToComplete = true
+                );
+            services.ConfigureOptions<RefreshTokenBackgroundJobSetup>();
             return services;
         }
 
@@ -124,6 +148,7 @@ namespace UserManagement.Extensions
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IRegistrationService, RegistrationService>();
             services.AddScoped<IUserManagementService, UserManagementService>();
+            services.AddTransient<RefreshTokenBackgroundJob>();
  
             return services;
         }
