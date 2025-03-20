@@ -64,11 +64,11 @@ namespace UserManagement
             }
         }
 
-        public RefreshToken GenerateRefreshToken(UserAgent userAgent)
+        public RefreshToken GenerateRefreshToken(UserAgent? userAgent)
         {
             try
             {
-                _logger.LogInformation("Generating refresh token for user device: {UserDevice}, IP: {UserIp}", userAgent.UserDevice, userAgent.UserIp);
+                _logger.LogInformation("Generating refresh token for user device: {UserDevice}, IP: {UserIp}", userAgent?.UserDevice, userAgent?.UserIp);
 
                 var randomNumber = new byte[32];
                 using var generator = new RNGCryptoServiceProvider();
@@ -79,17 +79,17 @@ namespace UserManagement
                     Token = Convert.ToBase64String(randomNumber),
                     ExpiresOn = DateTime.UtcNow.AddDays(10),
                     CreatedOn = DateTime.UtcNow,
-                    UserDeviceId = userAgent.UserDevice,
-                    UserIp = userAgent.UserIp
+                    UserDevice = userAgent?.UserDevice,
+                    UserIp = userAgent?.UserIp
                 };
 
-                _logger.LogInformation("Refresh token generated successfully for device: {UserDevice}, IP: {UserIp}", userAgent.UserDevice, userAgent.UserIp);
+                _logger.LogInformation("Refresh token generated successfully for device: {UserDevice}, IP: {UserIp}", userAgent?.UserDevice, userAgent?.UserIp);
 
                 return refreshToken;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating refresh token for device: {UserDevice}, IP: {UserIp}", userAgent.UserDevice, userAgent.UserIp);
+                _logger.LogError(ex, "Error generating refresh token for device: {UserDevice}, IP: {UserIp}", userAgent?.UserDevice, userAgent?.UserIp);
                 throw;
             }
         }
@@ -166,7 +166,7 @@ namespace UserManagement
                     return Error.Validation(description: "Inactive token");
                 }
 
-                if (refreshToken.UserIp != token.UserIpAddress || refreshToken.UserDeviceId != token.UserDeviceId)
+                if (refreshToken.UserIp != token.UserIpAddress || refreshToken.UserDevice != token.UserDeviceId)
                 {
                     _logger.LogWarning("Unauthorized refresh attempt for token: {RefreshToken} with IP: {UserIp}, Device: {UserDevice}", token.RefreshToken, token.UserIpAddress, token.UserDeviceId);
                     return Error.Unauthorized(description: "Unauthorized, please login again");

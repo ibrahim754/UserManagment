@@ -23,10 +23,11 @@ namespace UserManagement.DAL.Configurations.Quartz
             _logger.LogInformation("Esablish the refreshtoken background job at {DataTime.UtcNow}", DateTime.UtcNow);
             return Task.CompletedTask;
         }
-        private async Task Fun()
-        {
-            var result = await _mailService.SendEmailAsync("ibrahimsalman277@gmail.com", "Test Quartz", "hello from the body");
-            return;
-        }
+        //private async Task Fun()
+        //{
+            
+        //    var result = await _mailService.SendEmailAsync("ibrahimsalman277@gmail.com", "Test Quartz", "hello from the body");
+        //    return;
+        //}
     }
 }

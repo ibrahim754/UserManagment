@@ -10,7 +10,7 @@ namespace UserManagement.Errors
 
         public static readonly Error UsernameAlreadyRegistered = Error.Validation(
             code: "User.UsernameAlreadyRegistered",
-            description: "Username is already registered.");
+            description: "UserName is already registered.");
 
         public static readonly Error ImageUploadFailed = Error.Failure(
             code: "User.ImageUploadFailed",

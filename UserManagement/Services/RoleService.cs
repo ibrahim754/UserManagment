@@ -23,7 +23,7 @@ namespace UserManagement.Services
 
        
 
-        public async Task<ErrorOr<bool>> AddNewRoleAsync(string roleName)
+        public async Task<ErrorOr<bool>> AddNewRoleAsync(string? roleName)
         {
             try
             {

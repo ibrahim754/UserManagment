@@ -185,7 +185,7 @@ public class UserManagementService : IUserManagementService
             return Error.Failure(description: "Something went wrong while assigning role");
         }
     }
-    private async Task<ErrorOr<User>> ExistUser(string userIdentifier)
+    public async Task<ErrorOr<User>> ExistUser(string userIdentifier)
     {
         try
         {

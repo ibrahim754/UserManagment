@@ -27,7 +27,7 @@ public class AuthService : IAuthService
         _logger = logger;
     }
 
-    public async Task<ErrorOr<AuthModel>> LogInAsync(TokenRequestModel model, UserAgent userAgent)
+    public async Task<ErrorOr<AuthModel>> LogInAsync(TokenRequestModel model, UserAgent? userAgent)
     {
         try
         {
@@ -55,7 +55,7 @@ public class AuthService : IAuthService
                 _logger.LogWarning("User {username} Is Blocked Due To Multiple Login Fails or MissBehave", user.UserName);
                 return UserErrors.UserIsLockedOut;
             }
-            _logger.LogDebug("Generating JWT for user: {Username}", user.UserName);
+            _logger.LogDebug("Generating JWT for user: {UserName}", user.UserName);
             var jwtSecurityToken = await _tokenService.CreateJwtTokenAsync(user);
             var rolesList = await _userManager.GetRolesAsync(user);
 
@@ -71,7 +71,7 @@ public class AuthService : IAuthService
                 var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
                 authModel.RefreshToken = activeRefreshToken?.Token;
                 authModel.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
-                _logger.LogInformation("Active refresh token found for user: {Username}", user.UserName);
+                _logger.LogInformation("Active refresh token found for user: {UserName}", user.UserName);
             }
             else
             {
@@ -80,7 +80,7 @@ public class AuthService : IAuthService
                 authModel.RefreshTokenExpiration = refreshToken.ExpiresOn;
                 user.RefreshTokens?.Add(refreshToken);
                 await _userManager.UpdateAsync(user);
-                _logger.LogInformation("New refresh token generated for user: {Username}", user.UserName);
+                _logger.LogInformation("New refresh token generated for user: {UserName}", user.UserName);
             }
 
             return authModel;

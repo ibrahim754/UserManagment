@@ -12,8 +12,8 @@ namespace UserManagement.Models
         public DateTime CreatedOn { get; set; }
         public DateTime? RevokedOn { get; set; }
         public bool IsActive => RevokedOn == null && !IsExpired;
-        public string UserIp { get; set; }
-        public string UserDeviceId { get; set; }
+        public string? UserIp { get; set; }
+        public string? UserDevice { get; set; }
         public string UserId { get; set; }
         [JsonIgnore]
         public User User {  get; set; }

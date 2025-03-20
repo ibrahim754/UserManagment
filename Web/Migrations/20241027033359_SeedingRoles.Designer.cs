@@ -177,7 +177,7 @@ namespace Web.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("UserDeviceId")
+                    b.Property<string>("UserDevice")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -211,7 +211,7 @@ namespace Web.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Username")
+                    b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 

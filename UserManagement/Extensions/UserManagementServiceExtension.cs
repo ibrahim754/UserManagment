@@ -13,6 +13,7 @@ using UserManagement.DAL.Configurations.Quartz;
 using UserManagement.Entites;
 using UserManagement.Interfaces;
 using UserManagement.Models;
+using UserManagement.Seeding;
 using UserManagement.Services;
 
 namespace UserManagement.Extensions
@@ -32,7 +33,7 @@ namespace UserManagement.Extensions
             //services.AddPendingRegistrationConfiguration();
             services.AddQuartzDI(configuration);
             services.AddCacheConfiguration();
-            
+            services.AddSeedingDI(configuration);
             return services;
         }
 
@@ -93,6 +94,14 @@ namespace UserManagement.Extensions
                     sqlOptions => sqlOptions.MigrationsAssembly("Web")));
 
             //services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            return services;
+        }     
+        private static IServiceCollection AddSeedingDI(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddTransient<IDataSeeder, RoleSeeder>();
+            services.AddTransient<IDataSeeder, UsersSeeder>();
+
+             services.AddHostedService<DataSeedingRunner>();
             return services;
         }
 

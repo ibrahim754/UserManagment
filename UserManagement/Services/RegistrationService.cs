@@ -34,7 +34,7 @@ public class RegistrationService : IRegistrationService
         _logger = logger;
     }
 
-    public async Task<ErrorOr<Guid>> RegisterAsync(RegisterModel model, UserAgent userAgent)
+    public async Task<ErrorOr<Guid>> RegisterAsync(RegisterModel model, UserAgent? userAgent)
     {
         try
         {
@@ -46,24 +46,23 @@ public class RegistrationService : IRegistrationService
                 return UserErrors.EmailAlreadyRegistered;
             }
 
-            if (await _userManager.FindByNameAsync(model.Username) is not null)
+            if (await _userManager.FindByNameAsync(model.UserName) is not null)
             {
-                _logger.LogWarning("Registration attempt with existing username: {Username}", model.Username);
+                _logger.LogWarning("Registration attempt with existing username: {UserName}", model.UserName);
                 return UserErrors.UsernameAlreadyRegistered;
             }
-
-            _logger.LogInformation("User device ID: {Device}, IP: {Ip} trying to register new account with email {email}", userAgent.UserDevice, userAgent.UserIp, model.Email);
+            _logger.LogInformation("User device ID: {Device}, IP: {Ip} trying to register new account with email {email}", userAgent?.UserDevice, userAgent?.UserIp, model.Email);
             PendingRegistration confirmationUserModel = new PendingRegistration()
             {
                 Email = model.Email,
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 Password = model.Password,
-                Username = model.Username
+                Username = model.UserName
             };
             if (model.Image is not null)
             {
-                _logger.LogInformation($"uploading image for the user {model.Username}");
+                _logger.LogInformation($"uploading image for the user {model.UserName}");
                 var cloudResult = await _cloudinaryService.UploadImageAsync(model.Image);
                 if (cloudResult.IsError)
                 {
@@ -75,12 +74,17 @@ public class RegistrationService : IRegistrationService
             int confirmationCodeDuration = 15;
             var registerProccessId = Guid.NewGuid();
             confirmationUserModel.ConfirmationCode = GenerateSecureConfirmationCode();
-            var sendEmailResult = await _mailService.SendEmailAsync(model.Email, "Email Confirmation",
-               $"Dear User {model.FirstName} {model.LastName}\n," +
-               $"Please confirm your registration\n" +
-               $"Here is your confirmation code : {confirmationUserModel.ConfirmationCode}\n" +
-               $"Please Note that the confirmation code is only valid for {confirmationCodeDuration} mintues\n" +
-               $"With All Wishes");
+            MailRequestDto mail = new MailRequestDto()
+            {
+                mailTo = model.Email,
+                Subject = "Email Confirmation",
+                Body = $"Dear User {model.FirstName} {model.LastName}\n," +
+                       $"Please confirm your registration\n" +
+                       $"Here is your confirmation code : {confirmationUserModel.ConfirmationCode}\n" +
+                       $"Please Note that the confirmation code is only valid for {confirmationCodeDuration} mintues\n" +
+                       $"With All Wishes"
+            };
+            var sendEmailResult = await _mailService.SendEmailAsync(mail);
             if (sendEmailResult.IsError)
             {
                 return sendEmailResult.Errors.FirstOrDefault();
@@ -96,7 +100,7 @@ public class RegistrationService : IRegistrationService
         }
     }
 
-    public async Task<ErrorOr<AuthModel>> ConfirmRegisterAsync(ConfirmationUserDto confirmationUser, UserAgent userAgent)
+    public async Task<ErrorOr<AuthModel>> ConfirmRegisterAsync(ConfirmationUserDto confirmationUser, UserAgent? userAgent)
     {
         try
         {
@@ -122,13 +126,22 @@ public class RegistrationService : IRegistrationService
                 Image = model.Image,
                 EmailConfirmed = true
             };
-            var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var result = await _userManager.CreateAsync(user, model.Password);
+            return await CreateUserAsync(user, model.Password, userAgent);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "An error occurred during registration.");
+            return UserErrors.FetchUsersFailed;
+        }
+    }
 
-
-
+    public async Task<ErrorOr<AuthModel>> CreateUserAsync(User user, string password, UserAgent? userAgent)
+    {
+        try
+        {
+            var result = await _userManager.CreateAsync(user, password);
             await _userManager.AddToRoleAsync(user, "User");
-            _logger.LogInformation("User {Username} assigned role: User", model.Username);
+            _logger.LogInformation("User {UserName} assigned role: User", user.UserName);
 
             var jwtSecurityToken = await _tokenService.CreateJwtTokenAsync(user);
             var refreshToken = _tokenService.GenerateRefreshToken(userAgent);
@@ -136,7 +149,7 @@ public class RegistrationService : IRegistrationService
 
             user.RefreshTokens?.Add(refreshToken);
             await _userManager.UpdateAsync(user);
-            _logger.LogInformation("User {Username} registered successfully with refresh token.", model.Username);
+            _logger.LogInformation("User {UserName} registered successfully with refresh token.", user.UserName);
 
             return new AuthModel
             {
@@ -152,8 +165,7 @@ public class RegistrationService : IRegistrationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred during registration.");
-            return UserErrors.FetchUsersFailed;
+            return Error.Failure();
         }
     }
 
