@@ -19,7 +19,7 @@ namespace Web.Controllers
             _logger = logger;
         }
 
-        [HttpPost("changePassword")]
+        [HttpPost("resetPassword")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest model)
         {
             if (string.IsNullOrWhiteSpace(model.userIdentifier) ||
@@ -81,20 +81,20 @@ namespace Web.Controllers
             }
         }
         [HttpGet("BlockUser")]
-        public async Task<IActionResult> BlockUser(string userId)
+        public async Task<IActionResult> BlockUser(string userIdentifier)
         {
             try
             {
-                var result = await _userManagmentService.BlockUser(userId);
+                var result = await _userManagmentService.BlockUser(userIdentifier);
                 return result.Match(
                     success =>
                     {
-                        _logger.LogInformation("Browse Users succeded");
+                        _logger.LogInformation("Blocked User With identifier {userIdentifier} succfully", userIdentifier);
                         return Ok(result.Value);
                     },
                     errors =>
                     {
-                        _logger.LogWarning("Could not browse users");
+                        _logger.LogWarning("Could not block User With identifier {userIdentifier}, Due to {Errors} ", userIdentifier, errors);
                         return Problem(errors);
                     }
                     );
@@ -102,6 +102,32 @@ namespace Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An Error Occoured While blocking the user");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during blocking the user.");
+
+            }
+        } 
+        [HttpGet("activateUser")]
+        public async Task<IActionResult> activateUserAsync(string userIdentifier)
+        {
+            try
+            {
+                var result = await _userManagmentService.ActivateUser(userIdentifier);
+                return result.Match(
+                    success =>
+                    {
+                        _logger.LogInformation("Activate User With identifier {userIdentifier} succfully", userIdentifier);
+                        return Ok(result.Value);
+                    },
+                    errors =>
+                    {
+                        _logger.LogWarning("Could not Activate User With identifier {userIdentifier}, Due to {Errors} ", userIdentifier, errors);
+                        return Problem(errors);
+                    }
+                    );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An Error Occoured While Activate the user with identifier {id}", userIdentifier);
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during blocking the user.");
 
             }

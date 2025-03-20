@@ -8,7 +8,7 @@ namespace UserManagement.Extensions
         public static WebApplication ConfigureApplication(this WebApplication app)
         {
             app.UseWebSockets();
-            app.MapHub<ChatHub>("/Chat-Hkub");
+            app.MapHub<ChatHub>("/Chat-Hub");
             return app;
         }
     }

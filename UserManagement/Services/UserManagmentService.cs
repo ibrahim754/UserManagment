@@ -31,7 +31,10 @@ public class UserManagementService : IUserManagementService
         {
             _logger.LogInformation("Fetching all users");
 
-            var users = await _userManager.Users.Include(e => e.RefreshTokens).AsNoTracking().ToListAsync();
+            var users = await _userManager.Users
+                .Include(e => e.RefreshTokens)
+                .AsNoTracking()
+                .ToListAsync();
 
             _logger.LogInformation("Retrieved {UserCount} users from the database", users.Count);
             return users;
@@ -70,6 +73,7 @@ public class UserManagementService : IUserManagementService
                 _logger.LogError("Failed to change password for user: {userIdentifier}. Errors: {Errors}", changePassword.userIdentifier, errors);
                 return UserErrors.ChangePasswordFailed;
             }
+            var result2 = await _userManager.UpdateSecurityStampAsync(user);
 
             _logger.LogInformation("Password changed successfully for user: {userIdentifier}", changePassword.userIdentifier);
             return "Changed Successfully";
@@ -80,34 +84,35 @@ public class UserManagementService : IUserManagementService
             return UserErrors.FetchUsersFailed;
         }
     }
-    public async Task<ErrorOr<bool>> ActiveUser(string userIdentifier)
+    public async Task<ErrorOr<bool>> ActivateUser(string userIdentifier)
     {
         try
         {
             var userExist = await ExistUser(userIdentifier);
             if (userExist.IsError)
             {
-                _logger.LogWarning("User with identifier {identifier} is not exist ",  userIdentifier);
-
+                _logger.LogWarning("User with identifier {identifier} does not exist", userIdentifier);
                 return userExist.Errors;
             }
+
             var user = userExist.Value;
-            user.LockoutEnabled = true;
-            user.LockoutEnd = DateTime.UtcNow.AddMinutes(1);
-            var result = await _userManager.UpdateAsync(user);
-            if (result.Succeeded)
+            // Remove lockout by setting LockoutEnd to null.
+            var result = await _userManager.SetLockoutEndDateAsync(user, null);
+            if (!result.Succeeded)
             {
-                return true;
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogWarning("Could not activate the user due to: {errors}", errors);
+                return Error.Validation(description: errors);
             }
-            return UserErrors.FetchUsersFailed;
+            return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"An error occurred while retrieving blocking the user sith id {userIdentifier}.");
+            _logger.LogError(ex, $"An error occurred while activating the user with identifier {userIdentifier}");
             return UserErrors.FetchUsersFailed;
-
         }
-    }  
+    }
+
     public async Task<ErrorOr<bool>> BlockUser(string userIdentifier)
     {
         try
@@ -119,15 +124,17 @@ public class UserManagementService : IUserManagementService
                 return userExist.Errors;
             }
             var user = userExist.Value;
-            await _userManager.SetLockoutEnabledAsync(user, false);
-            var result =  await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddMinutes(1));
+            await _userManager.SetLockoutEnabledAsync(user, true);
+            var result =  await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddMinutes(10));
 
        
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                return true;
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogWarning("Could not block the user due to {errors}", errors);
+                return Error.Validation(description: errors);
             }
-            return UserErrors.FetchUsersFailed;
+            return true;
         }
         catch (Exception ex)
         {
@@ -200,7 +207,7 @@ public class UserManagementService : IUserManagementService
                 _logger.LogWarning($"User with userIdentifier {userIdentifier} is not exist");
                 return UserErrors.UserNotFound;
             }
-            _logger.LogInformation($"User with userIdentifier {userIdentifier} was found");
+            _logger.LogInformation($"User with userIdentifier: {userIdentifier} was found");
             return user;
         }
         catch(Exception ex) 

@@ -78,6 +78,11 @@ namespace UserManagement.Extensions
             .AddEntityFrameworkStores<UserManagmentDbContext>()
             .AddDefaultTokenProviders();
 
+            services.Configure<SecurityStampValidatorOptions>(options =>
+            {
+                options.ValidationInterval = TimeSpan.Zero;  
+            });
+
             return services;
         }
 

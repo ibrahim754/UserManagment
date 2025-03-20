@@ -52,7 +52,7 @@ public class AuthService : IAuthService
             if (result.IsLockedOut)
             {
               
-                _logger.LogWarning("User {username} Is Blocked Due To Multiple Login Fails", user.UserName);
+                _logger.LogWarning("User {username} Is Blocked Due To Multiple Login Fails or MissBehave", user.UserName);
                 return UserErrors.UserIsLockedOut;
             }
             _logger.LogDebug("Generating JWT for user: {Username}", user.UserName);

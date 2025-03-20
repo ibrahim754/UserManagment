@@ -13,13 +13,20 @@ namespace Web.Controllers
     [ApiController]
     public class test :ControllerBase
     {
-        [HttpGet]
-        public IActionResult hello()
+        [HttpGet("TestExceptionHandling")]
+        public IActionResult Test()
         {
             int num = 0;
             int ans = 10 / num; 
 
-            return Ok(ans);
+            return Ok(10);
+        }
+        [HttpGet]
+        [Authorize]
+        public IActionResult TestAuth()
+        {
+            return Ok("Auth is Working");
+
         }
     }
 
