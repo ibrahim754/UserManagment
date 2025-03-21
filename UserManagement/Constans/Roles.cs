@@ -5,6 +5,7 @@
         Adminstrator,
         SuperAdmin,
         Admin,
-        Basic
+        Basic,
+        User
     }
 }

@@ -18,23 +18,23 @@ namespace UserManagement.Seeding
         {
             _logger.LogInformation("Start Seeding the defaultRoles");
 
-            foreach (var role in Enum.GetValues(typeof(DefaultRoles)))
+            foreach (var role in Enum.GetNames(typeof(DefaultRoles)))
             {
                 try
                 {
-                    _logger.LogInformation("Start Seeding the role {role-name}", role.ToString());
-                    var result = await _roleService.AddNewRoleAsync(role.ToString());
+                    _logger.LogInformation("Start Seeding the role {role-name}", role);
+                    var result = await _roleService.AddNewRoleAsync(role );
                     if (result.IsError)
                     {
                         _logger.LogWarning("Could not seed the role {role-name} due to {error}",
                             role.ToString(), result.Errors.FirstOrDefault().Description);
                         continue;
                     }
-                    _logger.LogInformation("Role {role-name} seeded succfully", role.ToString());
+                    _logger.LogInformation("Role {role-name} seeded succfully", role );
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Could not  Seed the role {role-name} due to exception {ex-decription}", role.ToString(),ex.Message);
+                    _logger.LogError(ex, "Could not  Seed the role {role-name} due to exception {ex-decription}", role,ex.Message);
                 }
             }
         }

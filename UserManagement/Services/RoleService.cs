@@ -27,13 +27,14 @@ namespace UserManagement.Services
         {
             try
             {
-                // must to ignore the spaces at the end and begining 
-                roleName = roleName.Trim();
+               
                 if (string.IsNullOrEmpty(roleName))
                 {
                     _logger.LogWarning("Role name cannot be empty.");
                     return Error.Unexpected(description: "Role name cannot be empty");
                 }
+                // must  ignore the spaces at the end and begining 
+                roleName = roleName.Trim();
 
                 _logger.LogInformation("Checking if role {roleName} already exists.", roleName);
                 if (await _roleManager.RoleExistsAsync(roleName))

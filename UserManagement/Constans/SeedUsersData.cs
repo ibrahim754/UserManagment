@@ -5,8 +5,8 @@ namespace UserManagement.Constans
 {
     internal static class SeedUsersData
     {
-        public static List<SeedingUserDto> Users => new()
-        {
+        public static List<SeedingUserDto> Users =>
+        [
             new SeedingUserDto
             {
                user = new User
@@ -18,6 +18,6 @@ namespace UserManagement.Constans
                },
                 password = "123456"
             }
-        };
+        ];
     }
 }

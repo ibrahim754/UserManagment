@@ -31,7 +31,7 @@ namespace UserManagement.Controllers
                     UserIp = HttpContext.Connection?.RemoteIpAddress?.ToString()
                 };
 
-                var result = await _authService.RegisterAsync(model, userAgent);
+                var result = await _authService.RegisterAsync(model, userAgent, null);
 
                 return result.Match(
                     Guid =>

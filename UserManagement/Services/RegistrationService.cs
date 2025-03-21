@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
+using UserManagement.Constans;
 using UserManagement.DTOs;
 using UserManagement.Entites;
 using UserManagement.Errors;
@@ -34,11 +35,13 @@ public class RegistrationService : IRegistrationService
         _logger = logger;
     }
 
-    public async Task<ErrorOr<Guid>> RegisterAsync(RegisterModel model, UserAgent? userAgent)
+    public async Task<ErrorOr<Guid>> RegisterAsync(RegisterModel model, UserAgent? userAgent, List<string>? roles)
     {
         try
         {
             _logger.LogInformation("Starting registration process for user with email: {Email}", model.Email);
+
+            roles ??= [DefaultRoles.User.ToString()];
 
             if (await _userManager.FindByEmailAsync(model.Email) is not null)
             {
@@ -58,7 +61,8 @@ public class RegistrationService : IRegistrationService
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 Password = model.Password,
-                Username = model.UserName
+                Username = model.UserName,
+                roles = roles
             };
             if (model.Image is not null)
             {
@@ -95,7 +99,7 @@ public class RegistrationService : IRegistrationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred during registration.");
+            _logger.LogError(ex, "An error occurred during registration, due to {error-message}", ex.Message);
             return UserErrors.FetchUsersFailed;
         }
     }
@@ -126,21 +130,21 @@ public class RegistrationService : IRegistrationService
                 Image = model.Image,
                 EmailConfirmed = true
             };
-            return await CreateUserAsync(user, model.Password, userAgent);
+            return await CreateUserAsync(user, model.Password, model.roles ?? [], userAgent);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred during registration.");
+            _logger.LogError(ex, "An error occurred Confirm Email registration, due to {error-message}",ex.Message);
             return UserErrors.FetchUsersFailed;
         }
     }
 
-    public async Task<ErrorOr<AuthModel>> CreateUserAsync(User user, string password, UserAgent? userAgent)
+    public async Task<ErrorOr<AuthModel>> CreateUserAsync(User user, string password, List<string> roles, UserAgent? userAgent)
     {
         try
         {
             var result = await _userManager.CreateAsync(user, password);
-            await _userManager.AddToRoleAsync(user, "User");
+            await _userManager.AddToRolesAsync(user, roles);
             _logger.LogInformation("User {UserName} assigned role: User", user.UserName);
 
             var jwtSecurityToken = await _tokenService.CreateJwtTokenAsync(user);
@@ -165,6 +169,7 @@ public class RegistrationService : IRegistrationService
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "An error occurred during Creating User, due to {error-message}", ex.Message);
             return Error.Failure();
         }
     }

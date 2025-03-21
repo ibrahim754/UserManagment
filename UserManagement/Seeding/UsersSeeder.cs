@@ -29,40 +29,27 @@ namespace UserManagement.Seeding
 
             foreach (var user in usersToSeed)
             {
-                var existingUserResult = await _userManagementService.ExistUser(user.user.UserName);
+              
+                var existingUserResult = await _userManagementService.ExistUser(user.user.UserName ?? "");
 
                 if (existingUserResult.IsError)
                 {
+                    var roles = Enum.GetNames(typeof(DefaultRoles)).ToList();
                     _logger.LogInformation("User {UserName} does not exist. Creating...", user.user.UserName);
-                    // Create the user
-                    var createUserResult = await _registrationService.CreateUserAsync(user.user, user.password);
+                    var createUserResult = await _registrationService.CreateUserAsync(user.user, user.password, roles);
                     if (createUserResult.IsError)
                     {
-                        _logger.LogError("Failed to create user {UserName}: {Error}", user.user.UserName, createUserResult.FirstError.Description);
+                        _logger.LogError("Failed to create user {UserName}: {Error}, error from reg service", user.user.UserName, createUserResult.FirstError.Description);
                     }
                     else
                     {
                         _logger.LogInformation("User {UserName} created successfully.", user.user.UserName);
                     }
+
                 }
                 else
                 {
-                    _logger.LogInformation("User {UserName} already exists. Updating password...", user.user.UserName);
-                    // Update the password
-                    var changePasswordResult = await _userManagementService.ChangePasswordAsync(new ChangePasswordRequest
-                    {
-                        userIdentifier = user.user.UserName,
-                        NewPassword = user.password
-                    });
-
-                    if (changePasswordResult.IsError)
-                    {
-                        _logger.LogError("Failed to update password for user {UserName}: {Error}", user.user.UserName, changePasswordResult.FirstError.Description);
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Password updated successfully for user {UserName}.", user.user.UserName);
-                    }
+                    _logger.LogWarning("User {user-name} is already exist", user.user.UserName);
                 }
             }
         }

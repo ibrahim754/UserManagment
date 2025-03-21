@@ -12,8 +12,8 @@ using UserManagement.DAL;
 namespace Web.Migrations
 {
     [DbContext(typeof(UserManagmentDbContext))]
-    [Migration("20241029003614_addingIndexToRefTokenUsingUserId")]
-    partial class addingIndexToRefTokenUsingUserId
+    [Migration("20250320081534_intiailCreate")]
+    partial class intiailCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -91,13 +91,13 @@ namespace Web.Migrations
                     b.Property<string>("ClaimValue")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("userIdentifier")
+                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("userIdentifier");
+                    b.HasIndex("UserId");
 
                     b.ToTable("AspNetUserClaims", (string)null);
                 });
@@ -113,26 +113,26 @@ namespace Web.Migrations
                     b.Property<string>("ProviderDisplayName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("userIdentifier")
+                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("LoginProvider", "ProviderKey");
 
-                    b.HasIndex("userIdentifier");
+                    b.HasIndex("UserId");
 
                     b.ToTable("AspNetUserLogins", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
-                    b.Property<string>("userIdentifier")
+                    b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("RoleId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("userIdentifier", "RoleId");
+                    b.HasKey("UserId", "RoleId");
 
                     b.HasIndex("RoleId");
 
@@ -141,7 +141,7 @@ namespace Web.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.Property<string>("userIdentifier")
+                    b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("LoginProvider")
@@ -153,7 +153,7 @@ namespace Web.Migrations
                     b.Property<string>("Value")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("userIdentifier", "LoginProvider", "Name");
+                    b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
@@ -178,20 +178,18 @@ namespace Web.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserDevice")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("userIdentifier")
+                    b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("UserIp")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("userIdentifier");
+                    b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
                 });
@@ -208,7 +206,7 @@ namespace Web.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("UserName")
+                    b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
@@ -219,6 +217,9 @@ namespace Web.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Image")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -284,7 +285,7 @@ namespace Web.Migrations
                 {
                     b.HasOne("UserManagement.Models.User", null)
                         .WithMany()
-                        .HasForeignKey("userIdentifier")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -293,7 +294,7 @@ namespace Web.Migrations
                 {
                     b.HasOne("UserManagement.Models.User", null)
                         .WithMany()
-                        .HasForeignKey("userIdentifier")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -308,7 +309,7 @@ namespace Web.Migrations
 
                     b.HasOne("UserManagement.Models.User", null)
                         .WithMany()
-                        .HasForeignKey("userIdentifier")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -317,7 +318,7 @@ namespace Web.Migrations
                 {
                     b.HasOne("UserManagement.Models.User", null)
                         .WithMany()
-                        .HasForeignKey("userIdentifier")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -326,7 +327,7 @@ namespace Web.Migrations
                 {
                     b.HasOne("UserManagement.Models.User", "User")
                         .WithMany("RefreshTokens")
-                        .HasForeignKey("userIdentifier")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 

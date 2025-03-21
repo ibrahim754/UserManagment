@@ -9,5 +9,6 @@
         public Uri? Image {  get; set; }    
         public string Password { get; set; }
         public string ConfirmationCode { get; set; }      
+        public List<string>? roles { get; set; }
     }
 }
