@@ -37,7 +37,7 @@ namespace Web
                 app.UseSwaggerUI();
             }
             //app.UseMiddleware<ExceptionHandlingMiddleware>();
-            app.UseCors(); // Add this before other middleware
+            app.UseCors(); 
             //app.UseMiddleware<ApiResponseMiddleware>();
             app.UseHttpsRedirection();
 

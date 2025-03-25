@@ -10,35 +10,36 @@ using UserManagement.Errors;
 using UserManagement.Interfaces;
 using UserManagement.Models;
 
-public class RegistrationService : IRegistrationService
+namespace UserManagement.Services
 {
-    private readonly UserManager<User> _userManager;
-    private readonly ICloudinaryService _cloudinaryService;
-    private readonly IMailService _mailService;
-    private readonly ICacheService _cacheService;
-    private readonly ITokenService _tokenService;
-    private readonly ILogger<RegistrationService> _logger;
-
-    public RegistrationService(
-        UserManager<User> userManager,
-        ICloudinaryService cloudinaryService,
-        IMailService mailService,
-        ICacheService cacheService,
-        ITokenService tokenService,
-        ILogger<RegistrationService> logger)
+    public class RegistrationService : IRegistrationService
     {
-        _userManager = userManager;
-        _cloudinaryService = cloudinaryService;
-        _mailService = mailService;
-        _cacheService = cacheService;
-        _tokenService = tokenService;
-        _logger = logger;
-    }
+        private readonly UserManager<User> _userManager;
+        private readonly ICloudinaryService _cloudinaryService;
+        private readonly IMailService _mailService;
+        private readonly ICacheService _cacheService;
+        private readonly ITokenService _tokenService;
+        private readonly ILogger<RegistrationService> _logger;
 
-    public async Task<ErrorOr<Guid>> RegisterAsync(RegisterModel model, UserAgent? userAgent, List<string>? roles)
-    {
-        try
+        public RegistrationService(
+            UserManager<User> userManager,
+            ICloudinaryService cloudinaryService,
+            IMailService mailService,
+            ICacheService cacheService,
+            ITokenService tokenService,
+            ILogger<RegistrationService> logger)
         {
+            _userManager = userManager;
+            _cloudinaryService = cloudinaryService;
+            _mailService = mailService;
+            _cacheService = cacheService;
+            _tokenService = tokenService;
+            _logger = logger;
+        }
+
+        public async Task<ErrorOr<Guid>> RegisterAsync(RegisterModel model, UserAgent? userAgent, List<string>? roles)
+        {
+
             _logger.LogInformation("Starting registration process for user with email: {Email}", model.Email);
 
             roles ??= [DefaultRoles.User.ToString()];
@@ -96,18 +97,12 @@ public class RegistrationService : IRegistrationService
             _cacheService.AddToCache(new CacheItem { Key = registerProccessId.ToString(), Value = confirmationUserModel }, confirmationCodeDuration * 60);
             return registerProccessId;
 
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred during registration, due to {error-message}", ex.Message);
-            return UserErrors.FetchUsersFailed;
-        }
-    }
 
-    public async Task<ErrorOr<AuthModel>> ConfirmRegisterAsync(ConfirmationUserDto confirmationUser, UserAgent? userAgent)
-    {
-        try
+        }
+
+        public async Task<ErrorOr<AuthModel>> ConfirmRegisterAsync(ConfirmationUserDto confirmationUser, UserAgent? userAgent)
         {
+
             var cacheResult = _cacheService.GetCacheItemByKey(confirmationUser.registerationId.ToString());
             if (cacheResult.IsError)
             {
@@ -131,18 +126,12 @@ public class RegistrationService : IRegistrationService
                 EmailConfirmed = true
             };
             return await CreateUserAsync(user, model.Password, model.roles ?? [], userAgent);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred Confirm Email registration, due to {error-message}",ex.Message);
-            return UserErrors.FetchUsersFailed;
-        }
-    }
 
-    public async Task<ErrorOr<AuthModel>> CreateUserAsync(User user, string password, List<string> roles, UserAgent? userAgent)
-    {
-        try
+        }
+
+        public async Task<ErrorOr<AuthModel>> CreateUserAsync(User user, string password, List<string> roles, UserAgent? userAgent)
         {
+
             var result = await _userManager.CreateAsync(user, password);
             await _userManager.AddToRolesAsync(user, roles);
             _logger.LogInformation("User {UserName} assigned role: User", user.UserName);
@@ -166,31 +155,27 @@ public class RegistrationService : IRegistrationService
                 RefreshToken = refreshToken.Token,
                 RefreshTokenExpiration = refreshToken.ExpiresOn
             };
+
         }
-        catch (Exception ex)
+
+        private static string GenerateSecureConfirmationCode()
         {
-            _logger.LogError(ex, "An error occurred during Creating User, due to {error-message}", ex.Message);
-            return Error.Failure();
+
+            const int minValue = 100000;
+            const int maxValue = 999999 + 1;
+
+
+            byte[] randomBytes = new byte[4];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomBytes);
+            }
+            int randomNumber = BitConverter.ToInt32(randomBytes, 0);
+
+            randomNumber = Math.Abs(randomNumber % (maxValue - minValue)) + minValue;
+
+            return randomNumber.ToString("D6");
         }
+
     }
-
-    private static string GenerateSecureConfirmationCode()
-    {
-
-        const int minValue = 100000;
-        const int maxValue = 999999 + 1;
-
-
-        byte[] randomBytes = new byte[4];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(randomBytes);
-        }
-        int randomNumber = BitConverter.ToInt32(randomBytes, 0);
-
-        randomNumber = Math.Abs(randomNumber % (maxValue - minValue)) + minValue;
-
-        return randomNumber.ToString("D6");
-    }
-
 }

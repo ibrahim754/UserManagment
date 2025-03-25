@@ -23,32 +23,25 @@ namespace UserManagement.Services
 
         public async Task<ErrorOr<Uri>> UploadImageAsync(IFormFile? imageFile)
         {
-            try
+            if (imageFile == null)
+                return CloudinaryErrors.InvalidImage;
+
+            using var stream = imageFile.OpenReadStream();
+            var uploadParams = new ImageUploadParams
             {
-                if (imageFile == null)
-                    return CloudinaryErrors.InvalidImage;
+                File = new FileDescription(imageFile.FileName, stream),
+                Folder = "Users Pics"
+            };
 
-                using var stream = imageFile.OpenReadStream();
-                var uploadParams = new ImageUploadParams
-                {
-                    File = new FileDescription(imageFile.FileName, stream),
-                    Folder = "Users Pics"
-                };
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
 
-                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
-
-                if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
-                {
-                    return uploadResult.SecureUrl;
-                }
-
-                return CloudinaryErrors.UploadFailed;
-            }
-            catch (Exception ex)
+            if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
             {
-                _logger.LogError(ex, "An error occurred during image upload");
-                return CloudinaryErrors.UploadException;
+                return uploadResult.SecureUrl;
             }
+
+            return CloudinaryErrors.UploadFailed;
+
         }
 
         public async Task<ErrorOr<byte[]>> DownloadImageAsync(string imageUrl)
@@ -56,15 +49,9 @@ namespace UserManagement.Services
             if (string.IsNullOrEmpty(imageUrl))
                 return CloudinaryErrors.InvalidUrl;
 
-            try
-            {
-                var imageData = await _httpClient.GetByteArrayAsync(imageUrl);
-                return imageData;
-            }
-            catch (Exception)
-            {
-                return CloudinaryErrors.DownloadFailed;
-            }
+            var imageData = await _httpClient.GetByteArrayAsync(imageUrl);
+            return imageData;
+
         }
     }
 }

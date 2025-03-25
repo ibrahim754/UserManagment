@@ -7,43 +7,43 @@ using UserManagement.Errors;
 using UserManagement.Interfaces;
 using UserManagement.Models;
 
-
-public class AuthService : IAuthService
+namespace UserManagement.Services
 {
-    private readonly UserManager<User> _userManager;
-    private readonly ITokenService _tokenService;
-    private readonly SignInManager<User> _signInManager;
-    private readonly ILogger<AuthService> _logger;
-
-    public AuthService(
-        UserManager<User> userManager,
-        ITokenService tokenService,
-        SignInManager<User> signInManager,
-        ILogger<AuthService> logger)
+    public class AuthService : IAuthService
     {
-        _userManager = userManager;
-        _tokenService = tokenService;
-        _signInManager = signInManager;
-        _logger = logger;
-    }
+        private readonly UserManager<User> _userManager;
+        private readonly ITokenService _tokenService;
+        private readonly SignInManager<User> _signInManager;
+        private readonly ILogger<AuthService> _logger;
 
-    public async Task<ErrorOr<AuthModel>> LogInAsync(TokenRequestModel model, UserAgent? userAgent)
-    {
-        try
+        public AuthService(
+            UserManager<User> userManager,
+            ITokenService tokenService,
+            SignInManager<User> signInManager,
+            ILogger<AuthService> logger)
         {
+            _userManager = userManager;
+            _tokenService = tokenService;
+            _signInManager = signInManager;
+            _logger = logger;
+        }
+
+        public async Task<ErrorOr<AuthModel>> LogInAsync(TokenRequestModel model, UserAgent? userAgent)
+        {
+
             _logger.LogInformation("Token request received for user: {Email}", model.Email);
 
             var authModel = new AuthModel();
             var user = await _userManager.FindByEmailAsync(model.Email);
-          
+
 
             if (user is null)
             {
                 _logger.LogWarning("Invalid login attempt for email: {Email}", model.Email);
-                return UserErrors.InvalidCredentials ;
+                return UserErrors.InvalidCredentials;
             }
             var result = await _signInManager.
-                PasswordSignInAsync(user.UserName??" ", model.Password, isPersistent: false, lockoutOnFailure: true);
+                PasswordSignInAsync(user.UserName ?? " ", model.Password, isPersistent: false, lockoutOnFailure: true);
             if (!result.Succeeded)
             {
                 _logger.LogWarning("User {username} failed to logIn", user.UserName);
@@ -51,7 +51,7 @@ public class AuthService : IAuthService
             }
             if (result.IsLockedOut)
             {
-              
+
                 _logger.LogWarning("User {username} Is Blocked Due To Multiple Login Fails or MissBehave", user.UserName);
                 return UserErrors.UserIsLockedOut;
             }
@@ -66,7 +66,7 @@ public class AuthService : IAuthService
             authModel.ExpiresOn = jwtSecurityToken.ValidTo;
             authModel.Roles = rolesList.ToList();
 
-            if (user.RefreshTokens != null && user.RefreshTokens.Any(t => t.IsActive)) 
+            if (user.RefreshTokens != null && user.RefreshTokens.Any(t => t.IsActive))
             {
                 var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
                 authModel.RefreshToken = activeRefreshToken?.Token;
@@ -84,24 +84,13 @@ public class AuthService : IAuthService
             }
 
             return authModel;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "An error occurred while generating token.");
-            return UserErrors.FetchUsersFailed;
-        }
-    }
-
-    public Task<ErrorOr<bool>> LogOutAsync(string userIdentifier)
-    {
-        try
-        {
 
         }
-        catch (Exception ex)
+
+        public Task<ErrorOr<bool>> LogOutAsync(string userIdentifier)
         {
 
+            throw new NotImplementedException();
         }
-        throw new NotImplementedException();
     }
 }

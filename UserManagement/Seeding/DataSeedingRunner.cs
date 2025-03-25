@@ -30,17 +30,12 @@ namespace UserManagement.Seeding
 
             foreach (var seeder in seeders)
             {
-                try
-                {
-                    _logger.LogInformation("Starting Seeding {seed-name}", seeder.GetType().Name);
-                    await seeder.SeedAsync();
-                    _logger.LogInformation("Finished Seeding {seed-name} succssfully", seeder.GetType().Name);
 
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to seed data for {Seeder}", seeder.GetType().Name);
-                }
+                _logger.LogInformation("Starting Seeding {seed-name}", seeder.GetType().Name);
+                await seeder.SeedAsync();
+                _logger.LogInformation("Finished Seeding {seed-name} succssfully", seeder.GetType().Name);
+
+
             }
         }
 

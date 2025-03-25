@@ -22,7 +22,7 @@ namespace UserManagement.Extensions
     {
         public static IServiceCollection AddUserManagementServices(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddExcpetionFilter(configuration);
+            services.AddExcpetionFilter();
             services.AddLogging(configuration);
             services.AddSignalRDI();
             services.AddIdentityServices();
@@ -43,7 +43,7 @@ namespace UserManagement.Extensions
             //services.AddMemoryCache();
             return services;
         }
-        private static IServiceCollection AddExcpetionFilter(this IServiceCollection services, IConfiguration configuration)
+        private static IServiceCollection AddExcpetionFilter(this IServiceCollection services)
         {
             services.AddControllers(options =>
             {

@@ -13,7 +13,7 @@ namespace Web.Controllers
         private readonly IUserManagementService _userManagmentService;
         private readonly ILogger<UserManagmentController> _logger;
 
-        public UserManagmentController(IUserManagementService  userManagmentService, ILogger<UserManagmentController> logger)
+        public UserManagmentController(IUserManagementService userManagmentService, ILogger<UserManagmentController> logger)
         {
             _userManagmentService = userManagmentService;
             _logger = logger;
@@ -30,135 +30,101 @@ namespace Web.Controllers
                 return BadRequest("User ID, current password, and new password are required!");
             }
 
-            try
-            {
-                _logger.LogInformation("Attempting to change password for user {userIdentifier}", model.userIdentifier);
 
-                var result = await _userManagmentService.ChangePasswordAsync(model);
+            _logger.LogInformation("Attempting to change password for user {userIdentifier}", model.userIdentifier);
 
-                return result.Match(
-                    success =>
-                    {
-                        _logger.LogInformation("Password changed successfully for user {userIdentifier}", model.userIdentifier);
-                        return Ok("Password changed successfully");
-                    },
-                    errors =>
-                    {
-                        _logger.LogWarning("Password change failed for user {userIdentifier}", model.userIdentifier);
-                        return Problem(errors);
-                    });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while changing password for user {userIdentifier}", model.userIdentifier);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during password change.");
-            }
+            var result = await _userManagmentService.ChangePasswordAsync(model);
+
+            return result.Match(
+                success =>
+                {
+                    _logger.LogInformation("Password changed successfully for user {userIdentifier}", model.userIdentifier);
+                    return Ok("Password changed successfully");
+                },
+                errors =>
+                {
+                    _logger.LogWarning("Password change failed for user {userIdentifier}", model.userIdentifier);
+                    return Problem(errors);
+                });
+
         }
         [HttpGet("browse")]
         public async Task<IActionResult> BrowseUsers()
         {
-            try
-            {
-                var result = await _userManagmentService.BrowseAsync();
-                return result.Match(
-                    success =>
-                    {
-                        _logger.LogInformation("Browse Users succeded");
-                        return Ok(result.Value);
-                    },
-                    errors =>
-                    {
-                        _logger.LogWarning("Could not browse users");
-                        return Problem(errors);
-                    }
-                    );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An Error Occoured While Browsing the users");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during Browsing change.");
+            var result = await _userManagmentService.BrowseAsync();
+            return result.Match(
+                success =>
+                {
+                    _logger.LogInformation("Browse Users succeded");
+                    return Ok(result.Value);
+                },
+                errors =>
+                {
+                    _logger.LogWarning("Could not browse users");
+                    return Problem(errors);
+                }
+                );
 
-            }
         }
         [HttpGet("BlockUser")]
         public async Task<IActionResult> BlockUser(string userIdentifier)
-        {
-            try
-            {
-                var result = await _userManagmentService.BlockUser(userIdentifier);
-                return result.Match(
-                    success =>
-                    {
-                        _logger.LogInformation("Blocked User With identifier {userIdentifier} succfully", userIdentifier);
-                        return Ok(result.Value);
-                    },
-                    errors =>
-                    {
-                        _logger.LogWarning("Could not block User With identifier {userIdentifier}, Due to {Errors} ", userIdentifier, errors);
-                        return Problem(errors);
-                    }
-                    );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An Error Occoured While blocking the user");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during blocking the user.");
 
-            }
-        } 
+        {
+            var result = await _userManagmentService.BlockUser(userIdentifier);
+            return result.Match(
+                success =>
+                {
+                    _logger.LogInformation("Blocked User With identifier {userIdentifier} succfully", userIdentifier);
+                    return Ok(result.Value);
+                },
+                errors =>
+                {
+                    _logger.LogWarning("Could not block User With identifier {userIdentifier}, Due to {Errors} ", userIdentifier, errors);
+                    return Problem(errors);
+                }
+                );
+
+        }
         [HttpGet("activateUser")]
         public async Task<IActionResult> activateUserAsync(string userIdentifier)
         {
-            try
-            {
-                var result = await _userManagmentService.ActivateUser(userIdentifier);
-                return result.Match(
-                    success =>
-                    {
-                        _logger.LogInformation("Activate User With identifier {userIdentifier} succfully", userIdentifier);
-                        return Ok(result.Value);
-                    },
-                    errors =>
-                    {
-                        _logger.LogWarning("Could not Activate User With identifier {userIdentifier}, Due to {Errors} ", userIdentifier, errors);
-                        return Problem(errors);
-                    }
-                    );
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An Error Occoured While Activate the user with identifier {id}", userIdentifier);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred during blocking the user.");
 
-            }
+            var result = await _userManagmentService.ActivateUser(userIdentifier);
+            return result.Match(
+                success =>
+                {
+                    _logger.LogInformation("Activate User With identifier {userIdentifier} succfully", userIdentifier);
+                    return Ok(result.Value);
+                },
+                errors =>
+                {
+                    _logger.LogWarning("Could not Activate User With identifier {userIdentifier}, Due to {Errors} ", userIdentifier, errors);
+                    return Problem(errors);
+                }
+                );
+
         }
         [HttpPost("addRole")]
         public async Task<IActionResult> AddRoleAsync([FromBody] AddRoleModel model)
         {
-            try
-            {
-                _logger.LogInformation("Attempting to add role {Role} to user {userIdentifier}.", model.Role, model.userIdentifier);
+            _logger.LogInformation("Attempting to add role {Role} to user {userIdentifier}.", model.Role, model.userIdentifier);
 
-                var result = await _userManagmentService.AddRoleToUserAsync(model);
+            var result = await _userManagmentService.AddRoleToUserAsync(model);
 
-                return result.Match(
-                    _ =>
-                    {
-                        _logger.LogInformation("Role {Role} added successfully to user {userIdentifier}.", model.Role, model.userIdentifier);
-                        return Ok($"Role '{model.Role}' added to user with ID '{model.userIdentifier}'.");
-                    },
-                    errors =>
-                    {
-                        _logger.LogWarning("Failed to add role {Role} to user {userIdentifier}. Errors: {Errors}", model.Role, model.userIdentifier, errors);
-                        return Problem(errors);
-                    });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while adding role {Role} to user {userIdentifier}.", model.Role, model.userIdentifier);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while adding the role.");
-            }
+            return result.Match(
+                _ =>
+                {
+                    _logger.LogInformation("Role {Role} added successfully to user {userIdentifier}.", model.Role, model.userIdentifier);
+                    return Ok($"Role '{model.Role}' added to user with ID '{model.userIdentifier}'.");
+                },
+                errors =>
+                {
+                    _logger.LogWarning("Failed to add role {Role} to user {userIdentifier}. Errors: {Errors}", model.Role, model.userIdentifier, errors);
+                    return Problem(errors);
+                });
+
         }
+
 
     }
 }

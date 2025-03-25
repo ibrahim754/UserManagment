@@ -20,36 +20,22 @@ namespace UserManagement.Controllers
         [HttpPost("add")]
         public IActionResult AddToCache(CacheItemDto item)
         {
-            try
-            {
-                if (item == null)
-                    return BadRequest(CacheErrors.InvalidCacheItem);  // Using CacheErrors class
 
-                _cacheService.AddToCache(new CacheItem { Key = item.Key, Value = item.Value}, item.durationInSeconds);
-                return Ok($"Key '{item.Key}' added to cache with value '{item.Value}' for {item.durationInSeconds} seconds.");
-            }
-            catch (ArgumentNullException)
-            {
+            if (item == null)
                 return BadRequest(CacheErrors.InvalidCacheItem);  // Using CacheErrors class
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, CacheErrors.InternalServerError);  // Using CacheErrors class
-            }
+
+            _cacheService.AddToCache(new CacheItem { Key = item.Key, Value = item.Value }, item.durationInSeconds);
+            return Ok($"Key '{item.Key}' added to cache with value '{item.Value}' for {item.durationInSeconds} seconds.");
+
         }
 
         [HttpGet("print")]
         public ActionResult<List<CacheItem>> GetCacheContents()
         {
-            try
-            {
-                var cacheContents = _cacheService.GetCacheContents();
-                return Ok(cacheContents);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, CacheErrors.InternalServerError);  // Using CacheErrors class
-            }
+
+            var cacheContents = _cacheService.GetCacheContents();
+            return Ok(cacheContents);
+
         }
 
         [HttpGet("get/{key}")]

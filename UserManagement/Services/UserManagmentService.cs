@@ -7,28 +7,28 @@ using UserManagement.Errors;
 using UserManagement.Interfaces;
 using UserManagement.Models;
 
-
-public class UserManagementService : IUserManagementService
+namespace UserManagement.Services
 {
-    private readonly UserManager<User> _userManager;
-    private readonly ILogger<UserManagementService> _logger;
-    private readonly IRoleService _roleService;
-
-    public UserManagementService(
-        UserManager<User> userManager,
-        ILogger<UserManagementService> logger,
-        IRoleService roleService
-        )
+    public class UserManagementService : IUserManagementService
     {
-        _userManager = userManager;
-        _logger = logger;
-        _roleService = roleService;
-     }
+        private readonly UserManager<User> _userManager;
+        private readonly ILogger<UserManagementService> _logger;
+        private readonly IRoleService _roleService;
 
-    public async Task<ErrorOr<IReadOnlyCollection<User>>> BrowseAsync()
-    {
-        try
+        public UserManagementService(
+            UserManager<User> userManager,
+            ILogger<UserManagementService> logger,
+            IRoleService roleService
+            )
         {
+            _userManager = userManager;
+            _logger = logger;
+            _roleService = roleService;
+        }
+
+        public async Task<ErrorOr<IReadOnlyCollection<User>>> BrowseAsync()
+        {
+
             _logger.LogInformation("Fetching all users");
 
             var users = await _userManager.Users
@@ -38,17 +38,11 @@ public class UserManagementService : IUserManagementService
 
             _logger.LogInformation("Retrieved {UserCount} users from the database", users.Count);
             return users;
+
         }
-        catch (Exception ex)
+        public async Task<ErrorOr<string>> ChangePasswordAsync(ChangePasswordRequest changePassword)
         {
-            _logger.LogError(ex, "An error occurred while retrieving users.");
-            return UserErrors.FetchUsersFailed;
-        }
-    }
-    public async Task<ErrorOr<string>> ChangePasswordAsync(ChangePasswordRequest changePassword)
-    {
-        try
-        {
+
             _logger.LogInformation("Change password request for user: {userIdentifier}", changePassword.userIdentifier);
 
             var userExist = await ExistUser(changePassword.userIdentifier);
@@ -77,17 +71,11 @@ public class UserManagementService : IUserManagementService
 
             _logger.LogInformation("Password changed successfully for user: {userIdentifier}", changePassword.userIdentifier);
             return "Changed Successfully";
+
         }
-        catch (Exception ex)
+        public async Task<ErrorOr<bool>> ActivateUser(string userIdentifier)
         {
-            _logger.LogError(ex, "An error occurred while changing password.");
-            return UserErrors.FetchUsersFailed;
-        }
-    }
-    public async Task<ErrorOr<bool>> ActivateUser(string userIdentifier)
-    {
-        try
-        {
+
             var userExist = await ExistUser(userIdentifier);
             if (userExist.IsError)
             {
@@ -105,18 +93,12 @@ public class UserManagementService : IUserManagementService
                 return Error.Validation(description: errors);
             }
             return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"An error occurred while activating the user with identifier {userIdentifier}");
-            return UserErrors.FetchUsersFailed;
-        }
-    }
 
-    public async Task<ErrorOr<bool>> BlockUser(string userIdentifier)
-    {
-        try
+        }
+
+        public async Task<ErrorOr<bool>> BlockUser(string userIdentifier)
         {
+
             var userExist = await ExistUser(userIdentifier);
             if (userExist.IsError)
             {
@@ -125,9 +107,9 @@ public class UserManagementService : IUserManagementService
             }
             var user = userExist.Value;
             await _userManager.SetLockoutEnabledAsync(user, true);
-            var result =  await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddMinutes(10));
+            var result = await _userManager.SetLockoutEndDateAsync(user, DateTime.UtcNow.AddMinutes(10));
 
-       
+
             if (!result.Succeeded)
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
@@ -135,27 +117,20 @@ public class UserManagementService : IUserManagementService
                 return Error.Validation(description: errors);
             }
             return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"An error occurred while retrieving blocking the user with userIdentifier {userIdentifier}.");
-            return UserErrors.FetchUsersFailed;
 
         }
-    }
-    public async Task<ErrorOr<string>> AddRoleToUserAsync(AddRoleModel model)
-    {
-        try
+        public async Task<ErrorOr<string>> AddRoleToUserAsync(AddRoleModel model)
         {
+
             var userExist = await ExistUser(model.userIdentifier);
             if (userExist.IsError)
             {
                 _logger.LogWarning("User with identifier {identifier} is not exist ", model.userIdentifier);
                 return userExist.Errors;
             }
-          
+
             var roleExist = await _roleService.IsExistAsync(model.Role);
-            if (roleExist.IsError) 
+            if (roleExist.IsError)
             {
                 _logger.LogWarning("An Error when Adding role {roleName} to the userIdentifier {UserId} , because {Errors}", model.Role, model.userIdentifier, roleExist.Errors);
                 return Error.Validation(description: "Role Is not Exist");
@@ -178,17 +153,11 @@ public class UserManagementService : IUserManagementService
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
             _logger.LogError("Failed to add role {Role} to user {userIdentifier}. Errors: {Errors}", model.Role, model.userIdentifier, errors);
             return Error.Failure(description: errors);
+
         }
-        catch (Exception ex)
+        public async Task<ErrorOr<User>> ExistUser(string userIdentifier)
         {
-            _logger.LogError(ex, "An unexpected error occurred while adding role {Role} to user {userIdentifier}", model.Role, model.userIdentifier);
-            return Error.Failure(description: "Something went wrong while assigning role");
-        }
-    }
-    public async Task<ErrorOr<User>> ExistUser(string userIdentifier)
-    {
-        try
-        {
+
             var user = new User();
             if (Guid.TryParse(userIdentifier, out Guid _))
             {
@@ -209,13 +178,9 @@ public class UserManagementService : IUserManagementService
             }
             _logger.LogInformation($"User with userIdentifier: {userIdentifier} was found");
             return user;
-        }
-        catch(Exception ex) 
-        {
-            _logger.LogError(ex, "An error occurred while retrieving   the user with id userIdentifier {userIdentifier}.",userIdentifier);
-            return UserErrors.FetchUsersFailed;
+
+
         }
 
     }
-
 }

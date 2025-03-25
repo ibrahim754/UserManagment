@@ -8,6 +8,21 @@
         View
     }
 
+    public enum bookPermissions
+    {
+        Create,
+        Update,
+        Delete,
+        View
+    }
 
-    
+    public enum storiesPermissions
+    {
+        Create,
+        Update,
+        Delete,
+        View
+    }
+
+
 }

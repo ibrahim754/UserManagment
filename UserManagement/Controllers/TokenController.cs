@@ -22,8 +22,7 @@ namespace UserManagement.Controllers
         [HttpPost("revokeToken")]
         public async Task<IActionResult> RevokeToken([FromBody] RevokeToken model)
         {
-            try
-            {
+            
                 _logger.LogInformation("Attempting to revoke token.");
 
                 var token = model.Token ?? Request.Cookies["refreshToken"];
@@ -47,18 +46,12 @@ namespace UserManagement.Controllers
                         _logger.LogWarning("Token revocation failed.");
                         return Problem(errors);
                     });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while revoking token.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while revoking the token.");
-            }
+          
         }
 
         [HttpGet("refreshToken")]
         public async Task<IActionResult> RefreshToken()
         {
-            try
             {
                 _logger.LogInformation("Attempting to refresh token.");
 
@@ -83,20 +76,13 @@ namespace UserManagement.Controllers
                         _logger.LogWarning("Token refresh failed.");
                         return Problem(errors);
                     });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while refreshing token.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while refreshing the token.");
-            }
+           
         }
 
       
         private void SetRefreshTokenInCookie(string? refreshToken, DateTime expires)
         {
-            try
-            {
-                if (refreshToken is null)
+               if (refreshToken is null)
                 {
                     return;
                 }
@@ -112,11 +98,7 @@ namespace UserManagement.Controllers
 
                 Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
                 _logger.LogInformation("Refresh token set in cookie, expires at {Expiration}.", expires);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to set refresh token in cookie.");
-            }
+            
         }
     }
 }

@@ -8,8 +8,8 @@ namespace UserManagement.Seeding
     {
         private readonly IRoleService _roleService;
         private readonly ILogger<RoleSeeder> _logger;
-        public RoleSeeder(IRoleService roleService,ILogger<RoleSeeder> logger )
-        { 
+        public RoleSeeder(IRoleService roleService, ILogger<RoleSeeder> logger)
+        {
             _roleService = roleService;
             _logger = logger;
         }
@@ -20,22 +20,17 @@ namespace UserManagement.Seeding
 
             foreach (var role in Enum.GetNames(typeof(DefaultRoles)))
             {
-                try
+
+                _logger.LogInformation("Start Seeding the role {role-name}", role);
+                var result = await _roleService.AddNewRoleAsync(role);
+                if (result.IsError)
                 {
-                    _logger.LogInformation("Start Seeding the role {role-name}", role);
-                    var result = await _roleService.AddNewRoleAsync(role );
-                    if (result.IsError)
-                    {
-                        _logger.LogWarning("Could not seed the role {role-name} due to {error}",
-                            role.ToString(), result.Errors.FirstOrDefault().Description);
-                        continue;
-                    }
-                    _logger.LogInformation("Role {role-name} seeded succfully", role );
+                    _logger.LogWarning("Could not seed the role {role-name} due to {error}",
+                        role.ToString(), result.Errors.FirstOrDefault().Description);
+                    continue;
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Could not  Seed the role {role-name} due to exception {ex-decription}", role,ex.Message);
-                }
+                _logger.LogInformation("Role {role-name} seeded succfully", role);
+
             }
         }
     }
