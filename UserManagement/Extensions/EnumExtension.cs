@@ -6,7 +6,7 @@
         {
             string typeName = permission.GetType().Name;
             string permissionName = permission.ToString();
-            return $"Permissions.{typeName}.{permissionName}";
+            return $"Permission.{typeName}.{permissionName}";
         }
 
     }

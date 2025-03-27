@@ -8,23 +8,17 @@ namespace UserManagement.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CloudinaryController : ControllerBase
+    public class CloudinaryController(ICloudinaryService cloudinaryService, ILogger<CloudinaryController> logger)
+        : ControllerBase
     {
-        private readonly ICloudinaryService _cloudinaryService;
-        private readonly ILogger<CloudinaryController> _logger;
-
-        public CloudinaryController(ICloudinaryService cloudinaryService, ILogger<CloudinaryController> logger)
-        {
-            _cloudinaryService = cloudinaryService;
-            _logger = logger;
-        }
+        private readonly ILogger<CloudinaryController> _logger = logger;
 
         // Endpoint to upload an image
         [HttpPost("upload")]
         public async Task<IActionResult> UploadImage(IFormFile imageFile)
         {
 
-            ErrorOr<Uri> result = await _cloudinaryService.UploadImageAsync(imageFile);
+            ErrorOr<Uri> result = await cloudinaryService.UploadImageAsync(imageFile);
 
             return result.Match<IActionResult>(
                 success => Ok(new { Url = success.ToString() }),
@@ -38,7 +32,7 @@ namespace UserManagement.Controllers
         public async Task<IActionResult> DownloadImage([FromQuery] string imageUrl)
         {
 
-            ErrorOr<byte[]> result = await _cloudinaryService.DownloadImageAsync(imageUrl);
+            ErrorOr<byte[]> result = await cloudinaryService.DownloadImageAsync(imageUrl);
 
             return result.Match<IActionResult>(
                 success => File(success, "image/jpeg"),

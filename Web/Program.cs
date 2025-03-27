@@ -24,7 +24,7 @@ namespace Web
                           .WithExposedHeaders("SignalR-Status"); // For SignalR
                 });
             });
-            // Register UserManagmentService 
+            // Register UserManagementService 
             builder.Services.AddUserManagementServices(builder.Configuration);
        
             builder.Services.AddEndpointsApiExplorer();

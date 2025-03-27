@@ -8,20 +8,14 @@ namespace UserManagement.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : BaseController
+    public class AuthController(IAuthService authService, ILogger<RegistrationController> logger)
+        : BaseController
     {
-        private readonly IAuthService _authService;
-        private readonly ILogger<RegistrationController> _logger;
-        public AuthController(IAuthService authService, ILogger<RegistrationController> logger)
-        {
-            _authService = authService;
-            _logger = logger;
-        }
         [HttpPost("logIn")]
         public async Task<IActionResult> GetTokenAsync(TokenRequestModel model)
         {
 
-            _logger.LogInformation("Attempting to generate token for user with email {Email}", model.Email);
+            logger.LogInformation("Attempting to generate token for user with email {Email}", model.Email);
 
             var userAgent = new UserAgent
             {
@@ -29,7 +23,7 @@ namespace UserManagement.Controllers
                 UserIp = HttpContext.Connection.RemoteIpAddress?.ToString()
             };
 
-            var result = await _authService.LogInAsync(model, userAgent);
+            var result = await authService.LogInAsync(model, userAgent);
 
             return result.Match(
                 authModel =>
@@ -37,12 +31,12 @@ namespace UserManagement.Controllers
                     if (!string.IsNullOrEmpty(authModel.RefreshToken))
                         SetRefreshTokenInCookie(authModel.RefreshToken, authModel.RefreshTokenExpiration);
 
-                    _logger.LogInformation("Token generated successfully for user {UserName}", authModel.Username);
+                    logger.LogInformation("Token generated successfully for user {UserName}", authModel.Username);
                     return Ok(authModel);
                 },
                 errors =>
                 {
-                    _logger.LogWarning("Token generation failed for user with email {Email}", model.Email);
+                    logger.LogWarning("Token generation failed for user with email {Email}", model.Email);
                     return Problem(errors);
                 });
 
@@ -60,7 +54,7 @@ namespace UserManagement.Controllers
                 };
 
                 Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
-                _logger.LogInformation("Refresh token set in cookie, expires at {Expiration}", expires);
+                logger.LogInformation("Refresh token set in cookie, expires at {Expiration}", expires);
 
         }
 

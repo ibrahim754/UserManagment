@@ -4,32 +4,25 @@ using UserManagement.Interfaces;
 
 namespace UserManagement.Seeding
 {
-    internal class RoleSeeder : IDataSeeder
+    internal class RoleSeeder(IRoleService roleService, ILogger<RoleSeeder> logger) : IDataSeeder
     {
-        private readonly IRoleService _roleService;
-        private readonly ILogger<RoleSeeder> _logger;
-        public RoleSeeder(IRoleService roleService, ILogger<RoleSeeder> logger)
-        {
-            _roleService = roleService;
-            _logger = logger;
-        }
         public int OrderOfExecution => 1;
         public async Task SeedAsync()
         {
-            _logger.LogInformation("Start Seeding the defaultRoles");
+            logger.LogInformation("Start Seeding the default Roles");
 
             foreach (var role in Enum.GetNames(typeof(DefaultRoles)))
             {
 
-                _logger.LogInformation("Start Seeding the role {role-name}", role);
-                var result = await _roleService.AddNewRoleAsync(role);
+                logger.LogInformation("Start Seeding the role {role-name}", role);
+                var result = await roleService.AddNewRoleAsync(role);
                 if (result.IsError)
                 {
-                    _logger.LogWarning("Could not seed the role {role-name} due to {error}",
+                    logger.LogWarning("Could not seed the role {role-name} due to {error}",
                         role.ToString(), result.Errors.FirstOrDefault().Description);
                     continue;
                 }
-                _logger.LogInformation("Role {role-name} seeded succfully", role);
+                logger.LogInformation("Role {role-name} seeded successfully", role);
 
             }
         }

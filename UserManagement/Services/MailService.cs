@@ -13,21 +13,17 @@ using UserManagement.DTOs;
 
 namespace UserManagement.Services
 {
-    public class MailService : IMailService
+    public class MailService(
+        IOptions<MailSettings> mailSettings,
+        IFormateService formateService,
+        ILogger<MailService> logger)
+        : IMailService
     {
-        private readonly MailSettings _mailSettings;
-        private readonly ILogger<MailService> _logger;
-        private readonly IFormateService _formateService;
-        public MailService(IOptions<MailSettings> mailSettings, IFormateService formateService, ILogger<MailService> logger)
-        {
-            _mailSettings = mailSettings.Value;
-            _formateService = formateService;
-            _logger = logger;
-        }
+        private readonly MailSettings _mailSettings = mailSettings.Value;
 
         public async Task<ErrorOr<bool>> SendEmailAsync(MailRequestDto mailRequest)
         {
-            _logger.LogInformation("Start sending message {body} to the user {user-mail}", mailRequest.Body, mailRequest.mailTo);
+            logger.LogInformation("Start sending message {body} to the user {user-mail}", mailRequest.Body, mailRequest.mailTo);
 
             if (string.IsNullOrEmpty(mailRequest.mailTo) || !mailRequest.mailTo.Contains('@'))
                 return MailErrors.InvalidEmail;
@@ -43,7 +39,7 @@ namespace UserManagement.Services
             var builder = new BodyBuilder();
 
             // Create HTML email template
-            var htmlBody = _formateService.GenerateHtmlBody(_mailSettings.DisplayName ?? "No Name", mailRequest.Body);
+            var htmlBody = formateService.GenerateHtmlBody(_mailSettings.DisplayName ?? "No Name", mailRequest.Body);
             if (htmlBody.IsError)
             {
                 return Error.Failure(description: "can not generate Html Body");

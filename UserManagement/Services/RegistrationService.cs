@@ -12,50 +12,34 @@ using UserManagement.Models;
 
 namespace UserManagement.Services
 {
-    public class RegistrationService : IRegistrationService
+    public class RegistrationService(
+        UserManager<User> userManager,
+        ICloudinaryService cloudinaryService,
+        IMailService mailService,
+        ICacheService cacheService,
+        ITokenService tokenService,
+        ILogger<RegistrationService> logger)
+        : IRegistrationService
     {
-        private readonly UserManager<User> _userManager;
-        private readonly ICloudinaryService _cloudinaryService;
-        private readonly IMailService _mailService;
-        private readonly ICacheService _cacheService;
-        private readonly ITokenService _tokenService;
-        private readonly ILogger<RegistrationService> _logger;
-
-        public RegistrationService(
-            UserManager<User> userManager,
-            ICloudinaryService cloudinaryService,
-            IMailService mailService,
-            ICacheService cacheService,
-            ITokenService tokenService,
-            ILogger<RegistrationService> logger)
-        {
-            _userManager = userManager;
-            _cloudinaryService = cloudinaryService;
-            _mailService = mailService;
-            _cacheService = cacheService;
-            _tokenService = tokenService;
-            _logger = logger;
-        }
-
         public async Task<ErrorOr<Guid>> RegisterAsync(RegisterModel model, UserAgent? userAgent, List<string>? roles)
         {
 
-            _logger.LogInformation("Starting registration process for user with email: {Email}", model.Email);
+            logger.LogInformation("Starting registration process for user with email: {Email}", model.Email);
 
             roles ??= [DefaultRoles.User.ToString()];
 
-            if (await _userManager.FindByEmailAsync(model.Email) is not null)
+            if (await userManager.FindByEmailAsync(model.Email) is not null)
             {
-                _logger.LogWarning("Registration attempt with existing email: {Email}", model.Email);
+                logger.LogWarning("Registration attempt with existing email: {Email}", model.Email);
                 return UserErrors.EmailAlreadyRegistered;
             }
 
-            if (await _userManager.FindByNameAsync(model.UserName) is not null)
+            if (await userManager.FindByNameAsync(model.UserName) is not null)
             {
-                _logger.LogWarning("Registration attempt with existing username: {UserName}", model.UserName);
+                logger.LogWarning("Registration attempt with existing username: {UserName}", model.UserName);
                 return UserErrors.UsernameAlreadyRegistered;
             }
-            _logger.LogInformation("User device ID: {Device}, IP: {Ip} trying to register new account with email {email}", userAgent?.UserDevice, userAgent?.UserIp, model.Email);
+            logger.LogInformation("User device ID: {Device}, IP: {Ip} trying to register new account with email {email}", userAgent?.UserDevice, userAgent?.UserIp, model.Email);
             PendingRegistration confirmationUserModel = new PendingRegistration()
             {
                 Email = model.Email,
@@ -67,11 +51,11 @@ namespace UserManagement.Services
             };
             if (model.Image is not null)
             {
-                _logger.LogInformation($"uploading image for the user {model.UserName}");
-                var cloudResult = await _cloudinaryService.UploadImageAsync(model.Image);
+                logger.LogInformation($"uploading image for the user {model.UserName}");
+                var cloudResult = await cloudinaryService.UploadImageAsync(model.Image);
                 if (cloudResult.IsError)
                 {
-                    _logger.LogWarning("Error Occoured while Saving the user image");
+                    logger.LogWarning("Error Occoured while Saving the user image");
                     return cloudResult.Errors.FirstOrDefault();
                 }
                 confirmationUserModel.Image = cloudResult.Value;
@@ -89,12 +73,12 @@ namespace UserManagement.Services
                        $"Please Note that the confirmation code is only valid for {confirmationCodeDuration} mintues\n" +
                        $"With All Wishes"
             };
-            var sendEmailResult = await _mailService.SendEmailAsync(mail);
+            var sendEmailResult = await mailService.SendEmailAsync(mail);
             if (sendEmailResult.IsError)
             {
                 return sendEmailResult.Errors.FirstOrDefault();
             }
-            _cacheService.AddToCache(new CacheItem { Key = registerProccessId.ToString(), Value = confirmationUserModel }, confirmationCodeDuration * 60);
+            cacheService.AddToCache(new CacheItem { Key = registerProccessId.ToString(), Value = confirmationUserModel }, confirmationCodeDuration * 60);
             return registerProccessId;
 
 
@@ -103,7 +87,7 @@ namespace UserManagement.Services
         public async Task<ErrorOr<AuthModel>> ConfirmRegisterAsync(ConfirmationUserDto confirmationUser, UserAgent? userAgent)
         {
 
-            var cacheResult = _cacheService.GetCacheItemByKey(confirmationUser.registerationId.ToString());
+            var cacheResult = cacheService.GetCacheItemByKey(confirmationUser.registerationId.ToString());
             if (cacheResult.IsError)
             {
                 return cacheResult.Errors.FirstOrDefault();
@@ -132,17 +116,17 @@ namespace UserManagement.Services
         public async Task<ErrorOr<AuthModel>> CreateUserAsync(User user, string password, List<string> roles, UserAgent? userAgent)
         {
 
-            var result = await _userManager.CreateAsync(user, password);
-            await _userManager.AddToRolesAsync(user, roles);
-            _logger.LogInformation("User {UserName} assigned role: User", user.UserName);
+            var result = await userManager.CreateAsync(user, password);
+            await userManager.AddToRolesAsync(user, roles);
+            logger.LogInformation("User {UserName} assigned role: User", user.UserName);
 
-            var jwtSecurityToken = await _tokenService.CreateJwtTokenAsync(user);
-            var refreshToken = _tokenService.GenerateRefreshToken(userAgent);
+            var jwtSecurityToken = await tokenService.CreateJwtTokenAsync(user);
+            var refreshToken = tokenService.GenerateRefreshToken(userAgent);
             refreshToken.UserId = user.Id;
 
             user.RefreshTokens?.Add(refreshToken);
-            await _userManager.UpdateAsync(user);
-            _logger.LogInformation("User {UserName} registered successfully with refresh token.", user.UserName);
+            await userManager.UpdateAsync(user);
+            logger.LogInformation("User {UserName} registered successfully with refresh token.", user.UserName);
 
             return new AuthModel
             {

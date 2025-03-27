@@ -5,17 +5,11 @@ using UserManagement.Interfaces;
 using UserManagement.Errors;
 namespace UserManagement.Services
 {
-    public class CacheService : ICacheService
+    public class CacheService(IMemoryCache cache) : ICacheService
     {
-        private readonly IMemoryCache _cache;
-        private readonly List<string> _cacheKeys;
+        private readonly List<string> _cacheKeys = [];
         private const string CacheKeysList = "CacheKeys";
-        private const long maxPeriodAtMemoryInSeconds = 24 * 60 * 60;
-        public CacheService(IMemoryCache cache)
-        {
-            _cache = cache;
-            _cacheKeys = new List<string>();
-        }
+        private const long MaxPeriodAtMemoryInSeconds = 24 * 60 * 60;
 
         public void AddToCache(CacheItem item, long durationInSeconds)
         {
@@ -23,11 +17,11 @@ namespace UserManagement.Services
             {
                 throw new ArgumentNullException(nameof(item), "Cache item cannot be null.");
             }
-            if (durationInSeconds > maxPeriodAtMemoryInSeconds)
+            if (durationInSeconds > MaxPeriodAtMemoryInSeconds)
             {
-                throw new ArgumentNullException(nameof(item), $"Duration in Memory can not exceed {maxPeriodAtMemoryInSeconds}");
+                throw new ArgumentNullException(nameof(item), $"Duration in Memory can not exceed {MaxPeriodAtMemoryInSeconds}");
             }
-            _cache.Set(item.Key, item.Value, TimeSpan.FromSeconds(durationInSeconds));
+            cache.Set(item.Key, item.Value, TimeSpan.FromSeconds(durationInSeconds));
             TrackCacheKey(item.Key);
 
         }
@@ -35,15 +29,15 @@ namespace UserManagement.Services
         public List<CacheItem> GetCacheContents()
         {
 
-            if (!_cache.TryGetValue(CacheKeysList, out List<string> keys))
+            if (!cache.TryGetValue(CacheKeysList, out List<string>? keys))
             {
-                keys = new List<string>();
+                keys = [];
             }
 
             var result = new List<CacheItem>();
             foreach (var key in keys)
             {
-                if (_cache.TryGetValue(key, out var value))
+                if (cache.TryGetValue(key, out var value))
                 {
                     result.Add(new CacheItem { Key = key, Value = value ?? "" });
                 }
@@ -55,7 +49,7 @@ namespace UserManagement.Services
 
         public ErrorOr<object> GetCacheItemByKey(string key)
         {
-            if (_cache.TryGetValue(key, out var value))
+            if (cache.TryGetValue(key, out var value))
             {
                 return value ?? Error.NotFound("Cache item found but is empty.");
             }
@@ -63,11 +57,11 @@ namespace UserManagement.Services
             return CacheErrors.CacheKeyNotFound;
         }
              
-        }
+        
 
         private void TrackCacheKey(string key)
         {
-            if (!_cache.TryGetValue(CacheKeysList, out List<string> keys))
+            if (!cache.TryGetValue(CacheKeysList, out List<string> keys))
             {
                 keys = new List<string>();
             }
@@ -75,7 +69,7 @@ namespace UserManagement.Services
             if (!keys.Contains(key))
             {
                 keys.Add(key);
-                _cache.Set(CacheKeysList, keys);
+                cache.Set(CacheKeysList, keys);
             }
         }
     }

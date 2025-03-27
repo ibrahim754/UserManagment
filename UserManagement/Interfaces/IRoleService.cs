@@ -7,9 +7,10 @@ namespace UserManagement.Interfaces
     public interface IRoleService
     {
  
-        Task<ErrorOr<bool>> AddNewRoleAsync(string? RoleName);
-        Task<ErrorOr<bool>> DeleteRoleAsync(string RoleName);
-        Task<ErrorOr<bool>> IsExistAsync(string RoleName);
+        Task<ErrorOr<bool>> AddNewRoleAsync(string? roleName);
+        Task<ErrorOr<bool>> DeleteRoleAsync(string roleName);
+        Task<ErrorOr<IdentityRole>> IsExistAsync(string roleName);
+        Task<ErrorOr<bool>> SeedRoleClaimsAsync(string roleName, List<string>? claims);
         Task<ErrorOr<IReadOnlyCollection<IdentityRole>>> BrowseAsync();
     }
 }

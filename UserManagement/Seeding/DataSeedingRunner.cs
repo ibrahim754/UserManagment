@@ -33,7 +33,7 @@ namespace UserManagement.Seeding
 
                 _logger.LogInformation("Starting Seeding {seed-name}", seeder.GetType().Name);
                 await seeder.SeedAsync();
-                _logger.LogInformation("Finished Seeding {seed-name} succssfully", seeder.GetType().Name);
+                _logger.LogInformation("Finished Seeding {seed-name} successfully", seeder.GetType().Name);
 
 
             }

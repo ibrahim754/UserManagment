@@ -8,15 +8,8 @@ namespace UserManagement.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CacheController : ControllerBase
+    public class CacheController(ICacheService cacheService) : ControllerBase
     {
-        private readonly ICacheService _cacheService;
-
-        public CacheController(ICacheService cacheService)
-        {
-            _cacheService = cacheService;
-        }
-
         [HttpPost("add")]
         public IActionResult AddToCache(CacheItemDto item)
         {
@@ -24,7 +17,7 @@ namespace UserManagement.Controllers
             if (item == null)
                 return BadRequest(CacheErrors.InvalidCacheItem);  // Using CacheErrors class
 
-            _cacheService.AddToCache(new CacheItem { Key = item.Key, Value = item.Value }, item.durationInSeconds);
+            cacheService.AddToCache(new CacheItem { Key = item.Key, Value = item.Value }, item.durationInSeconds);
             return Ok($"Key '{item.Key}' added to cache with value '{item.Value}' for {item.durationInSeconds} seconds.");
 
         }
@@ -33,7 +26,7 @@ namespace UserManagement.Controllers
         public ActionResult<List<CacheItem>> GetCacheContents()
         {
 
-            var cacheContents = _cacheService.GetCacheContents();
+            var cacheContents = cacheService.GetCacheContents();
             return Ok(cacheContents);
 
         }
@@ -41,7 +34,7 @@ namespace UserManagement.Controllers
         [HttpGet("get/{key}")]
         public ActionResult<object> GetCacheItemByKey(string key)
         {
-            var result = _cacheService.GetCacheItemByKey(key);
+            var result = cacheService.GetCacheItemByKey(key);
             if (result.IsError)
             {
                 return NotFound(result.Errors.FirstOrDefault().Description);  // If error occurs

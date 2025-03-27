@@ -1,18 +1,30 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using UserManagement.Constans;
+using UserManagement.Extensions;
+using UserManagement.Interfaces;
 
 namespace UserManagement.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class Class1:ControllerBase
+    public class Class1 (IRoleService roleService,RoleManager<IdentityRole> roleManager):ControllerBase
     {
+        private UserPermissions UserPermissions { get; set; }
         [HttpGet]
-        public IActionResult TestEndpoint()
+        public async Task< IActionResult> TestEndpoint()
         {
-            int num  = 0;
-            int ans = 10 / num;
-            return Ok(ans);
+            var role = await roleService.IsExistAsync(DefaultRoles.Adminstrator.ToString());
+            if (role.IsError)
+            {
+                return BadRequest("Error Occurred!!");
+            }
+
+            await roleManager.AddPermissionClaim(role.Value);
+            return Ok();
         }
+
+
     }
 }

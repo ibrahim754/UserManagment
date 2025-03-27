@@ -8,18 +8,12 @@ using ErrorOr;
 
 namespace UserManagement.Services
 {
-    public class CloudinaryService : ICloudinaryService
+    public class CloudinaryService(Cloudinary cloudinary, HttpClient httpClient, ILogger<CloudinaryService> logger)
+        : ICloudinaryService
     {
-        private readonly Cloudinary _cloudinary;
-        private readonly HttpClient _httpClient;
-        private readonly ILogger<CloudinaryService> _logger;
-
-        public CloudinaryService(Cloudinary cloudinary, HttpClient httpClient, ILogger<CloudinaryService> logger)
-        {
-            _cloudinary = cloudinary ?? throw new ArgumentNullException(nameof(cloudinary));
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _logger = logger;
-        }
+        private readonly Cloudinary _cloudinary = cloudinary ?? throw new ArgumentNullException(nameof(cloudinary));
+        private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        private readonly ILogger<CloudinaryService> _logger = logger;
 
         public async Task<ErrorOr<Uri>> UploadImageAsync(IFormFile? imageFile)
         {

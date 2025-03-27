@@ -14,24 +14,17 @@ using UserManagement.DTOs;
 
 namespace UserManagement.Services
 {
-    public class TokenService : ITokenService
+    public class TokenService(UserManager<User> userManager, IOptions<JWT> jwt, ILogger<TokenService> logger)
+        : ITokenService
     {
-        private readonly UserManager<User> _userManager;
-        private readonly JWT _jwt;
-        private readonly ILogger<TokenService> _logger;
-        public TokenService(UserManager<User> userManager, IOptions<JWT> jwt, ILogger<TokenService> logger)
-        {
-            _userManager = userManager;
-            _jwt = jwt.Value;
-            _logger = logger;
-        }
+        private readonly JWT _jwt = jwt.Value;
 
         public async Task<JwtSecurityToken> CreateJwtTokenAsync(User user)
         {
 
-            _logger.LogInformation("Creating JWT token for user: {userIdentifier}", user.Id);
-            var userClaims = await _userManager.GetClaimsAsync(user);
-            var roles = await _userManager.GetRolesAsync(user);
+            logger.LogInformation("Creating JWT token for user: {userIdentifier}", user.Id);
+            var userClaims = await userManager.GetClaimsAsync(user);
+            var roles = await userManager.GetRolesAsync(user);
             var roleClaims = roles.Select(role => new Claim("roles", role)).ToList();
 
             var claims = new[]
@@ -47,7 +40,7 @@ namespace UserManagement.Services
             var symmetricSecurityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
             var signingCredentials = new SigningCredentials(symmetricSecurityKey, SecurityAlgorithms.HmacSha256);
 
-            _logger.LogInformation("JWT token created successfully for user: {userIdentifier}", user.Id);
+            logger.LogInformation("JWT token created successfully for user: {userIdentifier}", user.Id);
 
             return new JwtSecurityToken(
                 issuer: _jwt.Issuer,
@@ -61,7 +54,7 @@ namespace UserManagement.Services
         public RefreshToken GenerateRefreshToken(UserAgent? userAgent)
         {
 
-            _logger.LogInformation("Generating refresh token for user device: {UserDevice}, IP: {UserIp}", userAgent?.UserDevice, userAgent?.UserIp);
+            logger.LogInformation("Generating refresh token for user device: {UserDevice}, IP: {UserIp}", userAgent?.UserDevice, userAgent?.UserIp);
 
             var randomNumber = new byte[32];
             using var generator = new RNGCryptoServiceProvider();
@@ -76,7 +69,7 @@ namespace UserManagement.Services
                 UserIp = userAgent?.UserIp
             };
 
-            _logger.LogInformation("Refresh token generated successfully for device: {UserDevice}, IP: {UserIp}", userAgent?.UserDevice, userAgent?.UserIp);
+            logger.LogInformation("Refresh token generated successfully for device: {UserDevice}, IP: {UserIp}", userAgent?.UserDevice, userAgent?.UserIp);
 
             return refreshToken;
 
@@ -84,13 +77,13 @@ namespace UserManagement.Services
 
         public async Task<ErrorOr<bool>> RevokeTokenAsync(string token)
         {
-            _logger.LogInformation("Attempting to revoke token: {Token}", token);
+            logger.LogInformation("Attempting to revoke token: {Token}", token);
 
-            var user = await _userManager.Users.Include(e => e.RefreshTokens).SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
+            var user = await userManager.Users.Include(e => e.RefreshTokens).SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token));
 
             if (user == null)
             {
-                _logger.LogWarning("User not found for token: {Token}", token);
+                logger.LogWarning("User not found for token: {Token}", token);
                 return Error.Validation(description: "Invalid token");
             }
 
@@ -98,20 +91,20 @@ namespace UserManagement.Services
 
             if (refreshToken == null)
             {
-                _logger.LogWarning("Refresh token not found for token: {Token}", token);
+                logger.LogWarning("Refresh token not found for token: {Token}", token);
                 return Error.Validation(description: "Refresh token not found");
             }
 
             if (!refreshToken.IsActive)
             {
-                _logger.LogWarning("Token is already inactive: {Token}", token);
+                logger.LogWarning("Token is already inactive: {Token}", token);
                 return Error.Validation(description: "Inactive token");
             }
 
             refreshToken.RevokedOn = DateTime.UtcNow;
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
 
-            _logger.LogInformation("Token revoked successfully: {Token}", token);
+            logger.LogInformation("Token revoked successfully: {Token}", token);
 
             return true;
 
@@ -120,15 +113,15 @@ namespace UserManagement.Services
         public async Task<ErrorOr<AuthModel>> RefreshTokenAsync(RefreshTokenRequest token)
         {
 
-            _logger.LogInformation("Attempting to refresh token: {RefreshToken}", token.RefreshToken);
+            logger.LogInformation("Attempting to refresh token: {RefreshToken}", token.RefreshToken);
 
-            var user = await _userManager.Users
+            var user = await userManager.Users
                 .Include(r => r.RefreshTokens)
                 .SingleOrDefaultAsync(u => u.RefreshTokens.Any(t => t.Token == token.RefreshToken));
 
             if (user == null)
             {
-                _logger.LogWarning("User not found for refresh token: {RefreshToken}", token.RefreshToken);
+                logger.LogWarning("User not found for refresh token: {RefreshToken}", token.RefreshToken);
                 return Error.Validation(description: "Invalid token");
             }
 
@@ -136,19 +129,19 @@ namespace UserManagement.Services
 
             if (refreshToken == null)
             {
-                _logger.LogWarning("Refresh token not found: {RefreshToken}", token.RefreshToken);
+                logger.LogWarning("Refresh token not found: {RefreshToken}", token.RefreshToken);
                 return Error.Validation(description: "Refresh token not found");
             }
 
             if (!refreshToken.IsActive)
             {
-                _logger.LogWarning("Refresh token is inactive: {RefreshToken}", token.RefreshToken);
+                logger.LogWarning("Refresh token is inactive: {RefreshToken}", token.RefreshToken);
                 return Error.Validation(description: "Inactive token");
             }
 
             if (refreshToken.UserIp != token.UserIpAddress || refreshToken.UserDevice != token.UserDeviceId)
             {
-                _logger.LogWarning("Unauthorized refresh attempt for token: {RefreshToken} with IP: {UserIp}, Device: {UserDevice}", token.RefreshToken, token.UserIpAddress, token.UserDeviceId);
+                logger.LogWarning("Unauthorized refresh attempt for token: {RefreshToken} with IP: {UserIp}, Device: {UserDevice}", token.RefreshToken, token.UserIpAddress, token.UserDeviceId);
                 return Error.Unauthorized(description: "Unauthorized, please login again");
             }
 
@@ -158,11 +151,11 @@ namespace UserManagement.Services
             newRefreshToken.UserId = user.Id;
 
             user.RefreshTokens.Add(newRefreshToken);
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
 
             var jwtToken = await CreateJwtTokenAsync(user);
 
-            _logger.LogInformation("Token refreshed successfully for user: {userIdentifier}", user.Id);
+            logger.LogInformation("Token refreshed successfully for user: {userIdentifier}", user.Id);
 
             return new AuthModel
             {
@@ -170,7 +163,7 @@ namespace UserManagement.Services
                 Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
                 Email = user.Email,
                 Username = user.UserName,
-                Roles = (await _userManager.GetRolesAsync(user)).ToList(),
+                Roles = (await userManager.GetRolesAsync(user)).ToList(),
                 RefreshToken = newRefreshToken.Token,
                 RefreshTokenExpiration = newRefreshToken.ExpiresOn
             };

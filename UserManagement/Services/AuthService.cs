@@ -9,55 +9,43 @@ using UserManagement.Models;
 
 namespace UserManagement.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService(
+        UserManager<User> userManager,
+        ITokenService tokenService,
+        SignInManager<User> signInManager,
+        ILogger<AuthService> logger)
+        : IAuthService
     {
-        private readonly UserManager<User> _userManager;
-        private readonly ITokenService _tokenService;
-        private readonly SignInManager<User> _signInManager;
-        private readonly ILogger<AuthService> _logger;
-
-        public AuthService(
-            UserManager<User> userManager,
-            ITokenService tokenService,
-            SignInManager<User> signInManager,
-            ILogger<AuthService> logger)
-        {
-            _userManager = userManager;
-            _tokenService = tokenService;
-            _signInManager = signInManager;
-            _logger = logger;
-        }
-
         public async Task<ErrorOr<AuthModel>> LogInAsync(TokenRequestModel model, UserAgent? userAgent)
         {
 
-            _logger.LogInformation("Token request received for user: {Email}", model.Email);
+            logger.LogInformation("Token request received for user: {Email}", model.Email);
 
             var authModel = new AuthModel();
-            var user = await _userManager.FindByEmailAsync(model.Email);
+            var user = await userManager.FindByEmailAsync(model.Email);
 
 
             if (user is null)
             {
-                _logger.LogWarning("Invalid login attempt for email: {Email}", model.Email);
+                logger.LogWarning("Invalid login attempt for email: {Email}", model.Email);
                 return UserErrors.InvalidCredentials;
             }
-            var result = await _signInManager.
+            var result = await signInManager.
                 PasswordSignInAsync(user.UserName ?? " ", model.Password, isPersistent: false, lockoutOnFailure: true);
             if (!result.Succeeded)
             {
-                _logger.LogWarning("User {username} failed to logIn", user.UserName);
+                logger.LogWarning("User {username} failed to logIn", user.UserName);
                 return UserErrors.LogInFailed;
             }
             if (result.IsLockedOut)
             {
 
-                _logger.LogWarning("User {username} Is Blocked Due To Multiple Login Fails or MissBehave", user.UserName);
+                logger.LogWarning("User {username} Is Blocked Due To Multiple Login Fails or MissBehave", user.UserName);
                 return UserErrors.UserIsLockedOut;
             }
-            _logger.LogDebug("Generating JWT for user: {UserName}", user.UserName);
-            var jwtSecurityToken = await _tokenService.CreateJwtTokenAsync(user);
-            var rolesList = await _userManager.GetRolesAsync(user);
+            logger.LogDebug("Generating JWT for user: {UserName}", user.UserName);
+            var jwtSecurityToken = await tokenService.CreateJwtTokenAsync(user);
+            var rolesList = await userManager.GetRolesAsync(user);
 
             authModel.IsAuthenticated = true;
             authModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
@@ -71,16 +59,16 @@ namespace UserManagement.Services
                 var activeRefreshToken = user.RefreshTokens.FirstOrDefault(t => t.IsActive);
                 authModel.RefreshToken = activeRefreshToken?.Token;
                 authModel.RefreshTokenExpiration = activeRefreshToken.ExpiresOn;
-                _logger.LogInformation("Active refresh token found for user: {UserName}", user.UserName);
+                logger.LogInformation("Active refresh token found for user: {UserName}", user.UserName);
             }
             else
             {
-                var refreshToken = _tokenService.GenerateRefreshToken(userAgent);
+                var refreshToken = tokenService.GenerateRefreshToken(userAgent);
                 authModel.RefreshToken = refreshToken.Token;
                 authModel.RefreshTokenExpiration = refreshToken.ExpiresOn;
                 user.RefreshTokens?.Add(refreshToken);
-                await _userManager.UpdateAsync(user);
-                _logger.LogInformation("New refresh token generated for user: {UserName}", user.UserName);
+                await userManager.UpdateAsync(user);
+                logger.LogInformation("New refresh token generated for user: {UserName}", user.UserName);
             }
 
             return authModel;
